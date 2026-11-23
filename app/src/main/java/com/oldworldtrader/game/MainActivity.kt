@@ -109,7 +109,7 @@ private fun OldWorldTraderApp() {
                 }
                 item { SectionTitle("⛵ Sail to another city") }
                 items(ports.filter { it.name != port.name }) { destination ->
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFE7DDCA), shape = RoundedCornerShape(12.dp))) {
+                    Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFE7DDCA)) ) {
                         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("${destination.emoji} ${destination.name}\n${destination.subtitle}", Modifier.weight(1f), color = Color(0xFF344438))
                             Button(onClick = { port = destination; message = "Arrived at ${destination.name}! Market prices changed." }) { Text("Sail") }
@@ -118,7 +118,7 @@ private fun OldWorldTraderApp() {
                 }
                 item { SectionTitle("🏪 Merchant Shop") }
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFDFD0B5), shape = RoundedCornerShape(14.dp))) {
+                    Card(shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFDFD0B5)) ) {
                         Column(Modifier.padding(14.dp)) {
                             Text(if (shopOwned) "Shop Owner: ${port.name}" else "Buy your own shop", fontWeight = FontWeight.Bold, color = Color(0xFF283B2F))
                             Text(if (shopOwned) "Stock your shop using goods from your cargo." else "Purchase a shop for 500 gold.", color = Color(0xFF465347), fontSize = 13.sp)
