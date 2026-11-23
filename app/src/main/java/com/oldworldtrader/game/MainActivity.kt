@@ -25,7 +25,7 @@ private data class Boat(val name:String,val cost:Int,val capacity:Int)
  var owned by remember{mutableStateOf(setOf<String>())};var countries by remember{mutableStateOf(setOf<String>())};var army by remember{mutableStateOf(mapOf<String,Int>())};var note by remember{mutableStateOf("Welcome trader!")}
  val capacity=fleet[active.coerceIn(0,fleet.lastIndex)].capacity+bonus;val total=cargo.values.sum();val tabs=listOf("Shop","Cities","Ships","Market","Army");val power=army.values.sum()*20;val income=owned.sumOf{n->(cities.find{it.name==n}?.value?:0)/20}+countries.size*500
  MaterialTheme(colorScheme=lightColorScheme(primary=Color(0xFF285743))){Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))){
- Column(Modifier.fillMaxWidth().background(Color(0xFF1E342B)).padding(12.dp)){Text("OLD WORLD TRADER",color=Color(0xFFF2D49A,fontWeight=FontWeight.Bold));Text("Gold "+gold+" • Cargo "+total+"/"+capacity+" • Ships "+fleet.size+" • Year "+year,color=Color.White)}
+ Column(Modifier.fillMaxWidth().background(Color(0xFF1E342B)).padding(12.dp)){Text("OLD WORLD TRADER",color=Color(0xFFF2D49A),fontWeight=FontWeight.Bold);Text("Gold "+gold+" • Cargo "+total+"/"+capacity+" • Ships "+fleet.size+" • Year "+year,color=Color.White)}
  ScrollableTabRow(selectedTabIndex=tab){tabs.forEachIndexed{i,t->Tab(selected=tab==i,onClick={tab=i},text={Text(t)})}}
  Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(10.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Card{Column(Modifier.padding(10.dp)){Text("Current city: "+city.name+" / "+city.country,fontWeight=FontWeight.Bold);Text(note)}}
  when(tab){
