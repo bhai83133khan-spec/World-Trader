@@ -35,6 +35,27 @@ object EconomyLogic {
         return if (cost > intMax) Int.MAX_VALUE else cost.toInt()
     }
 
+    /** Apply one building upgrade without giving unrelated buildings housing/population bonuses. */
+    fun applyUpgrade(city: CityData, spec: BuildingSpec): CityData {
+        val currentLevel = city.buildings[spec.name] ?: 0
+        val nextLevel = (currentLevel.toLong() + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val nextBuildings = city.buildings.toMutableMap().apply { put(spec.name, nextLevel) }
+        val nextUnlocked = city.unlocked.toMutableSet().apply {
+            if (spec.name == "Power Plant") add("Electricity")
+        }
+        val nextPopulation = (city.population.toLong() + spec.populationBoost.toLong())
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val nextHousing = if (spec.name == "House") {
+            (city.housingLevel.toLong() + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        } else city.housingLevel
+        return city.copy(
+            population = nextPopulation,
+            housingLevel = nextHousing,
+            buildings = nextBuildings,
+            unlocked = nextUnlocked
+        )
+    }
+
     fun populationGrowth(city: CityData): Int = if(city.owned) (city.population * 0.03).toInt().coerceAtLeast(10) else 0
     fun canUnlockElectricity(city: CityData): Boolean = city.population >= 1500 || city.buildings["Army Barracks"] != null
 }
