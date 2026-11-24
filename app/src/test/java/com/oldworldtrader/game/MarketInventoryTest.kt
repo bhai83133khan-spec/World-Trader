@@ -30,6 +30,25 @@ class MarketInventoryTest {
     }
 
     @Test
+    fun cityStockIsIndependentAndCanBeQuotedSeparately() {
+        val initial = MarketState()
+        val alexQuote = MarketSystem.quote(wheat, cityIndex = 0, year = 1, stock = initial.stock("alex", "Wheat"))
+        val purchase = initial.buy("alex", wheat, alexQuote, quantity = 1, gold = 100)
+
+        assertTrue(purchase.success)
+        val alexStock = purchase.state.stock("alex", "Wheat")
+        val veniceStock = purchase.state.stock("ven", "Wheat")
+        assertEquals(119, alexStock)
+        assertEquals(120, veniceStock)
+
+        val updatedAlexQuote = MarketSystem.quote(wheat, cityIndex = 0, year = 1, stock = alexStock)
+        val veniceQuote = MarketSystem.quote(wheat, cityIndex = 1, year = 1, stock = veniceStock)
+        assertEquals(119, updatedAlexQuote.availableStock)
+        assertEquals(120, veniceQuote.availableStock)
+        assertTrue(veniceQuote.price > updatedAlexQuote.price)
+    }
+
+    @Test
     fun sellRejectsInvalidPriceAndCapsMarketStock() {
         val state = MarketState(
             cityStocks = mapOf("alex" to mapOf("Wheat" to Int.MAX_VALUE - 1)),
