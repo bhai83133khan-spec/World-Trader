@@ -59,4 +59,28 @@ class MarketSystemTest {
         assertEquals(Int.MAX_VALUE, EconomyLogic.upgradeCost(building, Int.MAX_VALUE))
         assertEquals(0, EconomyLogic.upgradeCost(building, -10))
     }
+    @Test
+    fun invalidSupplyAndDemandFactorsAreClampedAndNegativeStockIsEmpty() {
+        val good = TradeGood("Wood", 45)
+        val invalid = MarketSystem.quote(
+            good = good,
+            cityIndex = 0,
+            year = 1,
+            stock = -9,
+            citySupplyFactor = Int.MIN_VALUE,
+            demandFactor = Int.MAX_VALUE
+        )
+        val clamped = MarketSystem.quote(
+            good = good,
+            cityIndex = 0,
+            year = 1,
+            stock = -9,
+            citySupplyFactor = 50,
+            demandFactor = 200
+        )
+        assertEquals(clamped.price, invalid.price)
+        assertEquals(0, invalid.availableStock)
+        assertTrue(invalid.price > 0)
+        assertTrue(invalid.trendPercent in -99..999)
+    }
 }
