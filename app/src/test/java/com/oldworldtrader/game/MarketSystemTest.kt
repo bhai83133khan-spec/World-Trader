@@ -22,9 +22,9 @@ class MarketSystemTest {
 
     @Test
     fun purchaseCostUsesLongArithmetic() {
-        val quote = MarketQuote(price = 2_000_000_000, trendPercent = 0, trendLabel = "Stable", availableStock = 10)
+        val quote = MarketQuote(price = Int.MAX_VALUE, trendPercent = 0, trendLabel = "Stable", availableStock = 10)
         assertFalse(MarketSystem.canBuy(quote, quantity = 2, gold = Int.MAX_VALUE))
-        assertTrue(MarketSystem.canBuy(quote, quantity = 1, gold = 2_000_000_000))
+        assertTrue(MarketSystem.canBuy(quote, quantity = 1, gold = Int.MAX_VALUE))
     }
 
     @Test
