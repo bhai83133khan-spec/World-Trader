@@ -50,4 +50,28 @@ class MarketInventoryEdgeTest {
         assertEquals(0, sell.state.stock("alex", "Wheat"))
         assertEquals(0, sell.state.cargoAmount("Wheat"))
     }
+    @Test
+    fun invalidPriceAndNegativeWalletNeverMutateMarketState() {
+        val initial = MarketState(
+            cityStocks = mapOf("alex" to mapOf("Wheat" to 5)),
+            cargo = mapOf("Wheat" to 2)
+        )
+        val badBuyPrice = initial.buy("alex", wheat, quote.copy(price = 0), quantity = 1, gold = 100)
+        val negativeWalletBuy = initial.buy("alex", wheat, quote, quantity = 1, gold = -1)
+        val badSellPrice = initial.sell("alex", wheat, quote.copy(price = -10), quantity = 1, gold = 100)
+        val negativeWalletSell = initial.sell("alex", wheat, quote, quantity = 1, gold = -1)
+
+        assertFalse(badBuyPrice.success)
+        assertFalse(negativeWalletBuy.success)
+        assertFalse(badSellPrice.success)
+        assertFalse(negativeWalletSell.success)
+        listOf(badBuyPrice, negativeWalletBuy, badSellPrice, negativeWalletSell).forEach {
+            assertEquals(initial, it.state)
+        }
+        assertEquals(100, badBuyPrice.gold)
+        assertEquals(-1, negativeWalletBuy.gold)
+        assertEquals(100, badSellPrice.gold)
+        assertEquals(-1, negativeWalletSell.gold)
+    }
+
 }
