@@ -43,6 +43,12 @@ class MarketSystemTest {
         assertEquals(0, MarketSystem.updatedStockAfterBuy(emptyStock, -5))
         assertEquals(Int.MAX_VALUE, MarketSystem.updatedStockAfterSell(fullStock, 50))
         assertEquals(0, MarketSystem.updatedStockAfterBuy(emptyStock, Int.MAX_VALUE))
+
+        val stocked = emptyStock.copy(availableStock = 20)
+        assertEquals(20, MarketSystem.updatedStockAfterBuy(stocked, -5))
+        assertEquals(20, MarketSystem.updatedStockAfterBuy(stocked, 21))
+        assertEquals(20, MarketSystem.updatedStockAfterSell(stocked, 0))
+        assertEquals(20, MarketSystem.updatedStockAfterSell(stocked, -5))
     }
 
     @Test
