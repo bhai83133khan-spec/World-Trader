@@ -83,4 +83,32 @@ class MarketSystemTest {
         assertTrue(invalid.price > 0)
         assertTrue(invalid.trendPercent in -99..999)
     }
+    @Test
+    fun lowStockRaisesPriceComparedWithAbundantStock() {
+        val good = TradeGood("Wheat", 30)
+        val scarce = MarketSystem.quote(good, cityIndex = 0, year = 1, stock = 5)
+        val abundant = MarketSystem.quote(good, cityIndex = 0, year = 1, stock = 300)
+        assertTrue("Scarcity should raise price", scarce.price > abundant.price)
+    }
+
+    @Test
+    fun higherDemandRaisesPriceAndHigherSupplyLowersPrice() {
+        val good = TradeGood("Wheat", 30)
+        val baseline = MarketSystem.quote(good, cityIndex = 0, year = 1)
+        val highDemand = MarketSystem.quote(good, cityIndex = 0, year = 1, demandFactor = 150)
+        val highSupply = MarketSystem.quote(good, cityIndex = 0, year = 1, citySupplyFactor = 150)
+        assertTrue(highDemand.price > baseline.price)
+        assertTrue(highSupply.price < baseline.price)
+    }
+
+    @Test
+    fun priceFactorsAreClampedToSupportedRange() {
+        val good = TradeGood("Wheat", 30)
+        val low = MarketSystem.quote(good, cityIndex = 0, year = 1, citySupplyFactor = 1, demandFactor = 1)
+        val clampedLow = MarketSystem.quote(good, cityIndex = 0, year = 1, citySupplyFactor = 50, demandFactor = 50)
+        val high = MarketSystem.quote(good, cityIndex = 0, year = 1, citySupplyFactor = 999, demandFactor = 999)
+        val clampedHigh = MarketSystem.quote(good, cityIndex = 0, year = 1, citySupplyFactor = 200, demandFactor = 200)
+        assertEquals(clampedLow.price, low.price)
+        assertEquals(clampedHigh.price, high.price)
+    }
 }
