@@ -39,7 +39,7 @@
 - [ ] Research/technology tree
 - [ ] Unlock gates tied to population, buildings, wealth, or tech
 - [ ] Health, education, safety, morale, and city development modifiers
-- [ ] Save/load game state and recovery after app restart
+- [x] Offline save/load game state and recovery after app restart (gold, year, army, country, cities, building levels/unlocks, market stocks and cargo; stored in app-private preferences)
 
 ### UI/UX and reliability
 - [ ] Main dashboards and distinct sections for all systems
