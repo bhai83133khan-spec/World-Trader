@@ -9,7 +9,8 @@ data class MarketQuote(
     val trendPercent: Int,
     val trendLabel: String,
     val availableStock: Int,
-    val eventLabel: String = "Balanced"
+    val eventLabel: String = "Balanced",
+    val trendRisk: String = "Low"
 )
 
 data class MarketFactors(
@@ -74,7 +75,12 @@ object MarketSystem {
             trend <= -5 -> "Falling"
             else -> "Stable"
         }
-        return MarketQuote(price, trend, label, stock.coerceAtLeast(0), eventLabel)
+        val risk = when {
+            kotlin.math.abs(trend) >= 20 -> "High"
+            kotlin.math.abs(trend) >= 8 -> "Moderate"
+            else -> "Low"
+        }
+        return MarketQuote(price, trend, label, stock.coerceAtLeast(0), eventLabel, risk)
     }
 
     private fun scaledPrice(basePrice: Int, stockFactor: Int, demand: Int, supply: Int): Int {
