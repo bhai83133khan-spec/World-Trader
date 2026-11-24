@@ -86,6 +86,14 @@ object MarketSystem {
         else -> "Low"
     }
 
+    /** Human-readable market risk copy; unknown values fail closed instead of appearing safe. */
+    fun trendRiskLabel(risk: String): String = when (risk) {
+        "Low" -> "LOW • normal price movement"
+        "Moderate" -> "MODERATE • watch price movement"
+        "High" -> "HIGH • large price movement warning"
+        else -> "UNKNOWN • risk not classified"
+    }
+
     private fun scaledPrice(basePrice: Int, stockFactor: Int, demand: Int, supply: Int): Int {
         val numerator = basePrice.toLong().coerceAtLeast(1L) *
             stockFactor.toLong().coerceAtLeast(1L) *
