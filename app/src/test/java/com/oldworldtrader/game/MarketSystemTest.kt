@@ -111,4 +111,35 @@ class MarketSystemTest {
         assertEquals(clampedLow.price, low.price)
         assertEquals(clampedHigh.price, high.price)
     }
+    @Test
+    fun seasonalMarketEventsAreDeterministicAndBounded() {
+        val wheat = TradeGood("Wheat", 30)
+        val first = MarketSystem.factorsFor(wheat, cityIndex = 0, year = 2)
+        val repeated = MarketSystem.factorsFor(wheat, cityIndex = 0, year = 2)
+        assertEquals(first, repeated)
+        assertTrue(first.supplyFactor in 50..200)
+        assertTrue(first.demandFactor in 50..200)
+        assertEquals("High demand", first.label)
+    }
+
+    @Test
+    fun seasonalQuoteTrendComparesCurrentAndPreviousYearFactors() {
+        val wheat = TradeGood("Wheat", 30)
+        val current = MarketSystem.factorsFor(wheat, cityIndex = 0, year = 2)
+        val previous = MarketSystem.factorsFor(wheat, cityIndex = 0, year = 1)
+        val quote = MarketSystem.quote(
+            good = wheat,
+            cityIndex = 0,
+            year = 2,
+            stock = 120,
+            citySupplyFactor = current.supplyFactor,
+            demandFactor = current.demandFactor,
+            previousCitySupplyFactor = previous.supplyFactor,
+            previousDemandFactor = previous.demandFactor,
+            eventLabel = current.label
+        )
+        assertEquals("High demand", quote.eventLabel)
+        assertTrue("Prior-year shortage should be reflected in the trend", quote.trendPercent < 0)
+    }
+
 }
