@@ -56,6 +56,12 @@ object EconomyLogic {
         )
     }
 
+    /** City names must be meaningful and unique within the player's settlements. */
+    fun canFoundCityName(name: String, cities: List<CityData>): Boolean {
+        val normalized = name.trim()
+        return normalized.length in 3..32 && cities.none { it.name.trim().equals(normalized, ignoreCase = true) }
+    }
+
     fun populationGrowth(city: CityData): Int = if(city.owned) (city.population * 0.03).toInt().coerceAtLeast(10) else 0
     fun canUnlockElectricity(city: CityData): Boolean = city.population >= 1500 || city.buildings["Army Barracks"] != null
 }
