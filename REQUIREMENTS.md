@@ -22,7 +22,6 @@
 - [ ] Separate: own-city trade, city travel/trade, and country-level trade
 - [x] Market price changes driven by deterministic seasonal supply/demand events and year-based pricing (CI verified in run #56)
 - [x] Yearly port-stock replenishment refills depleted traded goods up to a cap without reducing surplus stock (unit tests)
-- [x] Yearly port-stock replenishment refills depleted traded goods up to a cap without reducing surplus stock (unit tests)
 - [ ] Shop ownership and inventory management
 
 ### Travel and maritime systems
