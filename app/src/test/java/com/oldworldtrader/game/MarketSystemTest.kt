@@ -160,4 +160,14 @@ class MarketSystemTest {
         assertTrue("Prior-year shortage should be reflected in the trend", quote.trendPercent < 0)
     }
 
+    @Test
+    fun trendRiskThresholdsAreInclusiveAndSafeForExtremeValues() {
+        assertEquals("Low", MarketSystem.trendRiskFor(7))
+        assertEquals("Low", MarketSystem.trendRiskFor(-7))
+        assertEquals("Moderate", MarketSystem.trendRiskFor(8))
+        assertEquals("Moderate", MarketSystem.trendRiskFor(-19))
+        assertEquals("High", MarketSystem.trendRiskFor(20))
+        assertEquals("High", MarketSystem.trendRiskFor(-20))
+        assertEquals("High", MarketSystem.trendRiskFor(Int.MIN_VALUE))
+    }
 }
