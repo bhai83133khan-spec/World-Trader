@@ -217,6 +217,7 @@ private fun OldWorldTraderApp() {
                                     Text(good.name, fontWeight = FontWeight.Bold)
                                     Text("Price: ${quote.price} gold • ${quote.trendLabel} (${quote.trendPercent}%)")
                                     Text("Event: ${quote.eventLabel}")
+                                    Text("Trend risk: ${quote.trendRisk}")
                                     Text("Port stock: ${quote.availableStock} • In cargo: $held")
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Button(
