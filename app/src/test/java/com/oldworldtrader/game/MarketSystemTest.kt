@@ -13,9 +13,9 @@ class MarketSystemTest {
         assertEquals("Low", low.trendRisk)
 
         val moderate = MarketSystem.quote(good, cityIndex = 0, year = 2, stock = 120,
-            citySupplyFactor = 100, demandFactor = 100,
+            citySupplyFactor = 100, demandFactor = 110,
             previousCitySupplyFactor = 100, previousDemandFactor = 100)
-        assertTrue(moderate.trendRisk in listOf("Low", "Moderate", "High"))
+        assertEquals("Moderate", moderate.trendRisk)
 
         val high = MarketSystem.quote(good, cityIndex = 0, year = 1, stock = 1,
             citySupplyFactor = 50, demandFactor = 200,
