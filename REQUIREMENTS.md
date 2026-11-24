@@ -16,9 +16,9 @@
 - [ ] City prosperity and annual/passive income with transparent calculations
 
 ### Trade and markets
-- [ ] City-specific market prices and price trend indicators
-- [ ] Inventory/stock quantities and stock-limited buying
-- [ ] Buying and selling with quantity, affordability, inventory, and stock validation
+- [x] City-specific market prices and price trend indicators
+- [x] Inventory/stock quantities and stock-limited buying
+- [x] Buying and selling with quantity, affordability, inventory, and stock validation
 - [ ] Separate: own-city trade, city travel/trade, and country-level trade
 - [ ] Market price changes driven by supply, demand, and time
 - [ ] Shop ownership and inventory management
@@ -50,13 +50,14 @@
 - [ ] QA: Android build, install, smoke tests, edge cases, balance review
 
 ## Current implementation snapshot
-Implemented in repository at the time this document was written:
-- Basic Compose prototype: city list/founding, building upgrades, annual advancement, market buy/sell, recruitment and conquest
+Implemented in repository:
+- Basic Compose prototype: city list/founding, building upgrades, annual advancement, recruitment and conquest
 - Starter economy and progression data models
-- City-specific market transaction engine for stock/cargo buy/sell validation
-- Market/economy arithmetic hardened with capped prices, stock and cargo; JUnit edge-case tests added
-- GitHub Actions now runs unit tests before the debug APK build
+- City-specific market transaction engine for market quotes, price trends, stock and cargo validation
+- **Market tab integration:** select a trading port; show city/year/stock-aware prices and trend; track port stock independently and shared cargo; buy/sell through the transaction engine with quantity, affordability, inventory and overflow checks
+- JUnit test added for city-stock isolation and separate port quotes
+- GitHub Actions runs unit tests before the debug APK build
 
-**Not yet wired into the UI:** the transaction engine remains a helper until the Market tab uses it; the market checklist is still intentionally unchecked.
+**Not yet implemented:** full city management dashboards and services, supply/demand controls, separate country trade, shop ownership/stock management, ship/fleet and route systems, kingdom/intelligence/research, comprehensive save/load, tutorial, and on-device QA.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.
