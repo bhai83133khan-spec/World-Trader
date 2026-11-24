@@ -62,6 +62,22 @@ class MarketInventoryTest {
         assertEquals(0, sale.state.cargoAmount("Wheat"))
     }
     @Test
+    fun perGoodYearlyRestockUsesOverridesAndDefaultRate() {
+        val state = MarketState(
+            cityStocks = mapOf("alex" to mapOf("Wheat" to 10, "Spice" to 10, "Silk" to 119))
+        )
+        val nextYear = state.restockYearly(
+            defaultRefill = 5,
+            refillAmounts = mapOf("Wheat" to 30, "Spice" to 2),
+            stockCap = 120
+        )
+        assertEquals(40, nextYear.stock("alex", "Wheat"))
+        assertEquals(12, nextYear.stock("alex", "Spice"))
+        assertEquals(120, nextYear.stock("alex", "Silk"))
+        assertEquals(10, state.stock("alex", "Wheat"))
+    }
+
+    @Test
     fun yearlyRestockRefillsDepletedPortsButPreservesSurplusAndCargo() {
         val state = MarketState(
             cityStocks = mapOf(
