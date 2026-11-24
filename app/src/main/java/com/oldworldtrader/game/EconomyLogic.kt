@@ -28,8 +28,9 @@ object EconomyLogic {
     }
 
     fun upgradeCost(spec: BuildingSpec, level: Int): Int {
-        val baseCost = BigInteger.valueOf(spec.baseCost.toLong().coerceAtLeast(0L))
-        val multiplier = BigInteger.valueOf(level.toLong().coerceAtLeast(0L) + 1L)
+        if (level < 0 || spec.baseCost <= 0) return 0
+        val baseCost = BigInteger.valueOf(spec.baseCost.toLong())
+        val multiplier = BigInteger.valueOf(level.toLong() + 1L)
         val cost = baseCost.multiply(multiplier)
         return if (cost > intMax) Int.MAX_VALUE else cost.toInt()
     }
