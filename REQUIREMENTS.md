@@ -20,7 +20,7 @@
 - [x] Inventory/stock quantities and stock-limited buying
 - [x] Buying and selling with quantity, affordability, inventory, and stock validation
 - [ ] Separate: own-city trade, city travel/trade, and country-level trade
-- [ ] Market price changes driven by supply, demand, and time
+- [x] Market price changes driven by deterministic seasonal supply/demand events and year-based pricing (CI verified in run #56)
 - [ ] Shop ownership and inventory management
 
 ### Travel and maritime systems
@@ -55,9 +55,10 @@ Implemented in repository:
 - Starter economy and progression data models
 - City-specific market transaction engine for market quotes, price trends, stock and cargo validation
 - **Market tab integration:** select a trading port; show city/year/stock-aware prices and trend; track port stock independently and shared cargo; buy/sell through the transaction engine with quantity, affordability, inventory and overflow checks
+- **Seasonal market events:** repeatable commodity/city/year supply-surplus, shortage, high-demand, high-supply, or balanced factors are integrated into the port UI; trends compare current and prior-year event factors
 - JUnit test added for city-stock isolation and separate port quotes
 - GitHub Actions runs unit tests before the debug APK build
 
-**Not yet implemented:** full city management dashboards and services, supply/demand controls, separate country trade, shop ownership/stock management, ship/fleet and route systems, kingdom/intelligence/research, comprehensive save/load, tutorial, and on-device QA.
+**Not yet implemented:** full city management dashboards and services, manual supply/demand controls, separate country trade, shop ownership/stock management, ship/fleet and route systems, kingdom/intelligence/research, comprehensive save/load, tutorial, and on-device QA.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.
