@@ -61,4 +61,23 @@ class MarketInventoryTest {
         assertEquals(30, sale.gold)
         assertEquals(0, sale.state.cargoAmount("Wheat"))
     }
+    @Test
+    fun yearlyRestockRefillsDepletedPortsButPreservesSurplusAndCargo() {
+        val state = MarketState(
+            cityStocks = mapOf(
+                "alex" to mapOf("Wheat" to 10, "Spice" to 150),
+                "ven" to mapOf("Wheat" to 110)
+            ),
+            cargo = mapOf("Wheat" to 4)
+        )
+        val nextYear = state.restockYearly(refillAmount = 25, stockCap = 120)
+        assertEquals(35, nextYear.stock("alex", "Wheat"))
+        assertEquals(150, nextYear.stock("alex", "Spice"))
+        assertEquals(120, nextYear.stock("ven", "Wheat"))
+        assertEquals(4, nextYear.cargoAmount("Wheat"))
+        assertEquals(10, state.stock("alex", "Wheat")) // original state remains immutable
+    }
+
+
+
 }
