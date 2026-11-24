@@ -8,12 +8,34 @@ data class MarketQuote(
     val price: Int,
     val trendPercent: Int,
     val trendLabel: String,
-    val availableStock: Int
+    val availableStock: Int,
+    val eventLabel: String = "Balanced"
+)
+
+data class MarketFactors(
+    val supplyFactor: Int,
+    val demandFactor: Int,
+    val label: String
 )
 
 object MarketSystem {
     private const val BASE_STOCK = 120
     private const val MAX_INT = Int.MAX_VALUE.toLong()
+
+    /**
+     * Repeatable city/good/year market events. The same save always sees the same
+     * seasonal event for a given city, commodity and year (no network or RNG).
+     */
+    fun factorsFor(good: TradeGood, cityIndex: Int, year: Int): MarketFactors {
+        val seed = good.name.hashCode().toLong() + cityIndex.toLong() * 7L + year.toLong() * 11L
+        return when (Math.floorMod(seed, 5L).toInt()) {
+            0 -> MarketFactors(130, 80, "Supply surplus")
+            1 -> MarketFactors(80, 130, "Supply shortage")
+            2 -> MarketFactors(100, 125, "High demand")
+            3 -> MarketFactors(125, 100, "High supply")
+            else -> MarketFactors(100, 100, "Balanced")
+        }
+    }
 
     fun quote(
         good: TradeGood,
@@ -21,7 +43,10 @@ object MarketSystem {
         year: Int,
         stock: Int = BASE_STOCK,
         citySupplyFactor: Int = 100,
-        demandFactor: Int = 100
+        demandFactor: Int = 100,
+        previousCitySupplyFactor: Int = citySupplyFactor,
+        previousDemandFactor: Int = demandFactor,
+        eventLabel: String = "Balanced"
     ): MarketQuote {
         val stockFactor = when {
             stock <= 0 -> 175
@@ -34,11 +59,13 @@ object MarketSystem {
         val supply = citySupplyFactor.coerceIn(50, 200)
         val demand = demandFactor.coerceIn(50, 200)
         val price = scaledPrice(EconomyLogic.marketPrice(good, cityIndex, year), stockFactor, demand, supply)
+        val previousSupply = previousCitySupplyFactor.coerceIn(50, 200)
+        val previousDemand = previousDemandFactor.coerceIn(50, 200)
         val previousPrice = scaledPrice(
             EconomyLogic.marketPrice(good, cityIndex, (year - 1).coerceAtLeast(1)),
             stockFactor,
-            demand,
-            supply
+            previousDemand,
+            previousSupply
         )
         val trend = (((price.toLong() - previousPrice.toLong()) * 100L) / previousPrice.toLong())
             .coerceIn(-99L, 999L).toInt()
@@ -47,7 +74,7 @@ object MarketSystem {
             trend <= -5 -> "Falling"
             else -> "Stable"
         }
-        return MarketQuote(price, trend, label, stock.coerceAtLeast(0))
+        return MarketQuote(price, trend, label, stock.coerceAtLeast(0), eventLabel)
     }
 
     private fun scaledPrice(basePrice: Int, stockFactor: Int, demand: Int, supply: Int): Int {
