@@ -53,6 +53,10 @@
 Implemented in repository at the time this document was written:
 - Basic Compose prototype: city list/founding, building upgrades, annual advancement, market buy/sell, recruitment and conquest
 - Starter economy and progression data models
-- MarketSystem helper: stock-aware quote calculations, supply/demand factors, price trend labels, and buy/sell validation helpers
+- City-specific market transaction engine for stock/cargo buy/sell validation
+- Market/economy arithmetic hardened with capped prices, stock and cargo; JUnit edge-case tests added
+- GitHub Actions now runs unit tests before the debug APK build
+
+**Not yet wired into the UI:** the transaction engine remains a helper until the Market tab uses it; the market checklist is still intentionally unchecked.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.
