@@ -192,11 +192,20 @@ private fun OldWorldTraderApp() {
                         })
                         EconomyLogic.goods.forEach { good ->
                             val stock = marketState.stock(marketCity.id, good.name)
+                            val factors = MarketSystem.factorsFor(good, marketCityIndex, year)
+                            val previousFactors = MarketSystem.factorsFor(
+                                good, marketCityIndex, (year - 1).coerceAtLeast(1)
+                            )
                             val quote = MarketSystem.quote(
                                 good = good,
                                 cityIndex = marketCityIndex,
                                 year = year,
-                                stock = stock
+                                stock = stock,
+                                citySupplyFactor = factors.supplyFactor,
+                                demandFactor = factors.demandFactor,
+                                previousCitySupplyFactor = previousFactors.supplyFactor,
+                                previousDemandFactor = previousFactors.demandFactor,
+                                eventLabel = factors.label
                             )
                             val held = marketState.cargoAmount(good.name)
                             val saleValue = quote.price.toLong() * quantity.toLong()
@@ -207,6 +216,7 @@ private fun OldWorldTraderApp() {
                                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(good.name, fontWeight = FontWeight.Bold)
                                     Text("Price: ${quote.price} gold • ${quote.trendLabel} (${quote.trendPercent}%)")
+                                    Text("Event: ${quote.eventLabel}")
                                     Text("Port stock: ${quote.availableStock} • In cargo: $held")
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Button(
@@ -237,7 +247,7 @@ private fun OldWorldTraderApp() {
                                 }
                             }
                         }
-                        Text("Prices depend on port, year, and available stock. Cargo and port stock are tracked separately.")
+                        Text("Prices now reflect port, year, stock, and deterministic supply/demand events. Cargo and port stock are tracked separately.")
                     }
                     4 -> {
                         Text("ARMY RECRUITMENT", fontWeight = FontWeight.Bold)
