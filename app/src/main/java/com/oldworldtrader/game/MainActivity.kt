@@ -94,7 +94,7 @@ private fun OldWorldTraderApp() {
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Button(
-                                enabled = gold >= 2500 && cityName.trim().length >= 3,
+                                enabled = gold >= 2500 && EconomyLogic.canFoundCityName(cityName, cities),
                                 onClick = {
                                     gold -= 2500
                                     val newCity = CityData(
