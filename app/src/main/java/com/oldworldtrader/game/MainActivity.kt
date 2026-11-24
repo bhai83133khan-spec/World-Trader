@@ -115,23 +115,20 @@ private fun OldWorldTraderApp() {
                                 val level = current.buildings[spec.name] ?: 0
                                 val cost = EconomyLogic.upgradeCost(spec, level)
                                 val locked = current.population < spec.unlockPopulation
+                                val maxed = level == Int.MAX_VALUE
                                 Text("${spec.name} • Level $level • ${spec.description}")
-                                Text(if (locked) "Unlock at ${spec.unlockPopulation} people" else "Upgrade cost: $cost")
+                                Text(when {
+                                    locked -> "Unlock at ${spec.unlockPopulation} people"
+                                    maxed -> "Maximum level reached"
+                                    else -> "Upgrade cost: $cost"
+                                })
                                 Button(
-                                    enabled = !locked && gold >= cost,
+                                    enabled = !locked && !maxed && gold >= cost,
                                     onClick = {
                                         gold -= cost
-                                        val updated = current.copy(
-                                            buildings = current.buildings.toMutableMap(),
-                                            unlocked = current.unlocked.toMutableSet()
-                                        )
-                                        updated.buildings[spec.name] = level + 1
-                                        updated.housingLevel += 1
-                                        updated.population = (updated.population.toLong() + spec.populationBoost + 80L)
-                                            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                                        if (spec.name == "Power Plant") updated.unlocked.add("Electricity")
+                                        val updated = EconomyLogic.applyUpgrade(current, spec)
                                         cities = cities.map { if (it.id == updated.id) updated else it }
-                                        message = "${spec.name} upgraded; housing and people increased."
+                                        message = "${spec.name} upgraded."
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) { Text("Build / Upgrade • ${spec.name}") }
