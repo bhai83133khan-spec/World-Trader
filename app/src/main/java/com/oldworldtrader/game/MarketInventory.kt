@@ -6,27 +6,33 @@ data class MarketState(
     val cargo: Map<String, Int> = emptyMap()
 ) {
     fun stock(cityId: String, goodName: String, defaultStock: Int = 120): Int =
-        cityStocks[cityId]?.get(goodName) ?: defaultStock
+        (cityStocks[cityId]?.get(goodName) ?: defaultStock).coerceAtLeast(0)
 
-    fun cargoAmount(goodName: String): Int = cargo[goodName] ?: 0
+    fun cargoAmount(goodName: String): Int =
+        (cargo[goodName] ?: 0).coerceAtLeast(0)
 
     fun buy(cityId: String, good: TradeGood, quote: MarketQuote, quantity: Int, gold: Int): MarketTransaction {
         if (quantity <= 0) return MarketTransaction(this, gold, false, "Quantity must be at least 1.")
+        if (quote.price <= 0 || gold < 0) return MarketTransaction(this, gold, false, "Invalid market price or wallet.")
         val available = stock(cityId, good.name, quote.availableStock)
         if (quantity > available) return MarketTransaction(this, gold, false, "Not enough market stock.")
         val cost = quote.price.toLong() * quantity.toLong()
         if (cost > gold.toLong()) return MarketTransaction(this, gold, false, "Not enough gold.")
+        val currentCargo = cargoAmount(good.name)
+        val nextCargoAmount = currentCargo.toLong() + quantity.toLong()
+        if (nextCargoAmount > Int.MAX_VALUE) return MarketTransaction(this, gold, false, "Cargo limit exceeded.")
         val nextStocks = cityStocks.toMutableMap()
         val cityMap = (nextStocks[cityId] ?: emptyMap()).toMutableMap()
         cityMap[good.name] = available - quantity
         nextStocks[cityId] = cityMap
         val nextCargo = cargo.toMutableMap()
-        nextCargo[good.name] = cargoAmount(good.name) + quantity
-        return MarketTransaction(copy(cityStocks = nextStocks, cargo = nextCargo), gold - cost.toInt(), true, "Bought ${quantity} ${good.name}.")
+        nextCargo[good.name] = nextCargoAmount.toInt()
+        return MarketTransaction(copy(cityStocks = nextStocks, cargo = nextCargo), gold - cost.toInt(), true, "Bought " + quantity + " " + good.name + ".")
     }
 
     fun sell(cityId: String, good: TradeGood, quote: MarketQuote, quantity: Int, gold: Int): MarketTransaction {
         if (quantity <= 0) return MarketTransaction(this, gold, false, "Quantity must be at least 1.")
+        if (quote.price <= 0 || gold < 0) return MarketTransaction(this, gold, false, "Invalid market price or wallet.")
         val held = cargoAmount(good.name)
         if (quantity > held) return MarketTransaction(this, gold, false, "Not enough cargo to sell.")
         val proceeds = quote.price.toLong() * quantity.toLong()
@@ -36,9 +42,10 @@ data class MarketState(
         nextCargo[good.name] = held - quantity
         val nextStocks = cityStocks.toMutableMap()
         val cityMap = (nextStocks[cityId] ?: emptyMap()).toMutableMap()
-        cityMap[good.name] = stock(cityId, good.name, quote.availableStock) + quantity
+        val newStock = stock(cityId, good.name, quote.availableStock).toLong() + quantity.toLong()
+        cityMap[good.name] = newStock.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         nextStocks[cityId] = cityMap
-        return MarketTransaction(copy(cityStocks = nextStocks, cargo = nextCargo), gold + proceeds.toInt(), true, "Sold ${quantity} ${good.name}.")
+        return MarketTransaction(copy(cityStocks = nextStocks, cargo = nextCargo), gold + proceeds.toInt(), true, "Sold " + quantity + " " + good.name + ".")
     }
 }
 
