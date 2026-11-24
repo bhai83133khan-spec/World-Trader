@@ -12,13 +12,26 @@ data class MarketState(
         (cargo[goodName] ?: 0).coerceAtLeast(0)
 
     /** Refill depleted port stock once per in-game year without reducing surplus stock. */
-    fun restockYearly(refillAmount: Int = 25, stockCap: Int = 120): MarketState {
-        if (refillAmount <= 0 || stockCap < 0 || cityStocks.isEmpty()) return this
+    fun restockYearly(refillAmount: Int = 25, stockCap: Int = 120): MarketState =
+        restockYearly(defaultRefill = refillAmount, refillAmounts = emptyMap(), stockCap = stockCap)
+
+    /**
+     * Allows different goods to recover at different yearly rates (e.g. food faster
+     * than luxury goods) while retaining the same cap and surplus-preserving rules.
+     * Any good not listed uses [defaultRefill].
+     */
+    fun restockYearly(
+        defaultRefill: Int,
+        refillAmounts: Map<String, Int>,
+        stockCap: Int = 120
+    ): MarketState {
+        if (defaultRefill <= 0 && refillAmounts.values.none { it > 0 } || stockCap < 0 || cityStocks.isEmpty()) return this
         val restocked = cityStocks.mapValues { (_, goods) ->
-            goods.mapValues { (_, currentStock) ->
+            goods.mapValues { (goodName, currentStock) ->
                 val stock = currentStock.coerceAtLeast(0)
-                if (stock >= stockCap) stock
-                else (stock.toLong() + refillAmount.toLong()).coerceAtMost(stockCap.toLong()).toInt()
+                val refill = (refillAmounts[goodName] ?: defaultRefill).coerceAtLeast(0)
+                if (stock >= stockCap || refill <= 0) stock
+                else (stock.toLong() + refill.toLong()).coerceAtMost(stockCap.toLong()).toInt()
             }
         }
         return copy(cityStocks = restocked)
