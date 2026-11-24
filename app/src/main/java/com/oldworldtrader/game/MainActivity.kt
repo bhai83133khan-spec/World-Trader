@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,25 +25,31 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun OldWorldTraderApp() {
-    var gold by remember { mutableIntStateOf(12000) }
-    var year by remember { mutableIntStateOf(1) }
+    val context = LocalContext.current
+    val savedGame = remember(context) { GameSaveStore.load(context) }
+    var gold by remember { mutableIntStateOf(savedGame?.gold ?: 12000) }
+    var year by remember { mutableIntStateOf(savedGame?.year ?: 1) }
     var tab by remember { mutableIntStateOf(0) }
     var selectedCityId by remember { mutableStateOf<String?>(null) }
     var marketCityId by remember { mutableStateOf("alex") }
     var marketCityMenuExpanded by remember { mutableStateOf(false) }
-    var marketState by remember { mutableStateOf(MarketState()) }
-    var selectedCountry by remember { mutableStateOf("Ottoman Empire") }
+    var marketState by remember { mutableStateOf(savedGame?.marketState ?: MarketState()) }
+    var selectedCountry by remember { mutableStateOf(savedGame?.selectedCountry ?: "Ottoman Empire") }
     var quantity by remember { mutableIntStateOf(1) }
-    var army by remember { mutableIntStateOf(0) }
+    var army by remember { mutableIntStateOf(savedGame?.army ?: 0) }
     var message by remember { mutableStateOf("Build your city, grow population, unlock new technologies.") }
     var cityName by remember { mutableStateOf("") }
-    var cities by remember { mutableStateOf(listOf(
+    var cities by remember { mutableStateOf(savedGame?.cities ?: listOf(
         CityData("alex", "Alexandria", "Egypt", 1200, 6000, 20),
         CityData("ven", "Venice", "Italy", 2400, 12000, 40),
         CityData("mus", "Muscat", "Oman", 900, 4500, 15),
         CityData("del", "Delhi", "India", 1800, 8000, 25),
         CityData("bag", "Baghdad", "Iraq", 2000, 9000, 30)
     )) }
+    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState) {
+        GameSaveStore.save(context, SavedGameState(gold, year, army, selectedCountry, cities, marketState))
+    }
+
     val current = cities.firstOrNull { it.id == selectedCityId }
     val marketCity = cities.firstOrNull { it.id == marketCityId } ?: cities.first()
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
@@ -53,6 +60,7 @@ private fun OldWorldTraderApp() {
             Column(Modifier.fillMaxWidth().background(Color(0xFF1E342B)).padding(12.dp)) {
                 Text("⚓ OLD WORLD TRADER", color = Color(0xFFF2D49A), fontWeight = FontWeight.Bold)
                 Text("Gold $gold • Army $army • Year $year", color = Color.White)
+                Text("Auto-save: local device", color = Color(0xFFBFD9CC), style = MaterialTheme.typography.labelSmall)
             }
             ScrollableTabRow(selectedTabIndex = tab) {
                 tabs.forEachIndexed { index, label ->
