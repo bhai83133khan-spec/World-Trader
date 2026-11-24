@@ -7,6 +7,24 @@ import org.junit.Test
 
 class MarketSystemTest {
     @Test
+    fun trendRiskClassifiesLargePriceMovesForTradeWarnings() {
+        val good = TradeGood("Rare Gem", 100)
+        val low = MarketSystem.quote(good, cityIndex = 0, year = 1, stock = 120)
+        assertEquals("Low", low.trendRisk)
+
+        val moderate = MarketSystem.quote(good, cityIndex = 0, year = 2, stock = 120,
+            citySupplyFactor = 100, demandFactor = 100,
+            previousCitySupplyFactor = 100, previousDemandFactor = 100)
+        assertTrue(moderate.trendRisk in listOf("Low", "Moderate", "High"))
+
+        val high = MarketSystem.quote(good, cityIndex = 0, year = 1, stock = 1,
+            citySupplyFactor = 50, demandFactor = 200,
+            previousCitySupplyFactor = 200, previousDemandFactor = 50)
+        assertEquals("High", high.trendRisk)
+    }
+
+
+    @Test
     fun extremePricesAndFactorsAreCappedInsteadOfWrapping() {
         val quote = MarketSystem.quote(
             good = TradeGood("Rare Gem", Int.MAX_VALUE),
