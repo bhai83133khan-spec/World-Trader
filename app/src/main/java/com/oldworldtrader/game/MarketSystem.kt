@@ -1,8 +1,8 @@
 package com.oldworldtrader.game
 
 /**
- * City-level market helpers. These are deterministic for a given city/year/good,
- * so prices are stable until the player advances the game year or inventory changes.
+ * City-level market helpers. Prices and stock calculations are bounded to avoid
+ * integer overflow from extreme market inputs.
  */
 data class MarketQuote(
     val price: Int,
@@ -13,6 +13,7 @@ data class MarketQuote(
 
 object MarketSystem {
     private const val BASE_STOCK = 120
+    private const val MAX_INT = Int.MAX_VALUE.toLong()
 
     fun quote(
         good: TradeGood,
@@ -32,12 +33,15 @@ object MarketSystem {
         }
         val supply = citySupplyFactor.coerceIn(50, 200)
         val demand = demandFactor.coerceIn(50, 200)
-        val price = (EconomyLogic.marketPrice(good, cityIndex, year) *
-            stockFactor * demand / (supply * 100)).coerceAtLeast(1)
-        val previousPrice = (EconomyLogic.marketPrice(good, cityIndex, (year - 1).coerceAtLeast(1)) *
-            stockFactor * demand / (supply * 100)).coerceAtLeast(1
+        val price = scaledPrice(EconomyLogic.marketPrice(good, cityIndex, year), stockFactor, demand, supply)
+        val previousPrice = scaledPrice(
+            EconomyLogic.marketPrice(good, cityIndex, (year - 1).coerceAtLeast(1)),
+            stockFactor,
+            demand,
+            supply
         )
-        val trend = ((price - previousPrice) * 100 / previousPrice).coerceIn(-99, 999)
+        val trend = (((price.toLong() - previousPrice.toLong()) * 100L) / previousPrice.toLong())
+            .coerceIn(-99L, 999L).toInt()
         val label = when {
             trend >= 5 -> "Rising"
             trend <= -5 -> "Falling"
@@ -46,14 +50,27 @@ object MarketSystem {
         return MarketQuote(price, trend, label, stock.coerceAtLeast(0))
     }
 
-    fun canBuy(quote: MarketQuote, quantity: Int, gold: Int): Boolean =
-        quantity > 0 && quantity <= quote.availableStock && gold >= quote.price * quantity
+    private fun scaledPrice(basePrice: Int, stockFactor: Int, demand: Int, supply: Int): Int {
+        val numerator = basePrice.toLong().coerceAtLeast(1L) *
+            stockFactor.toLong().coerceAtLeast(1L) *
+            demand.toLong().coerceAtLeast(1L)
+        val denominator = supply.toLong().coerceAtLeast(1L) * 100L
+        return (numerator / denominator).coerceIn(1L, MAX_INT).toInt()
+    }
 
-    fun canSell(inventory: Int, quantity: Int): Boolean = quantity > 0 && inventory >= quantity
+    fun canBuy(quote: MarketQuote, quantity: Int, gold: Int): Boolean {
+        if (quantity <= 0 || quote.price <= 0 || gold < 0 || quantity > quote.availableStock) return false
+        return quote.price.toLong() * quantity.toLong() <= gold.toLong()
+    }
+
+    fun canSell(inventory: Int, quantity: Int): Boolean =
+        quantity > 0 && inventory >= 0 && inventory.toLong() >= quantity.toLong()
 
     fun updatedStockAfterBuy(quote: MarketQuote, quantity: Int): Int =
-        (quote.availableStock - quantity).coerceAtLeast(0)
+        (quote.availableStock.toLong().coerceAtLeast(0L) - quantity.toLong().coerceAtLeast(0L))
+            .coerceIn(0L, MAX_INT).toInt()
 
     fun updatedStockAfterSell(quote: MarketQuote, quantity: Int): Int =
-        quote.availableStock + quantity.coerceAtLeast(0)
+        (quote.availableStock.toLong().coerceAtLeast(0L) + quantity.toLong().coerceAtLeast(0L))
+            .coerceIn(0L, MAX_INT).toInt()
 }
