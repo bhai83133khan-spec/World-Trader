@@ -161,6 +161,14 @@ class MarketSystemTest {
     }
 
     @Test
+    fun trendRiskLabelsWarnClearlyAndUnknownIsNotSafe() {
+        assertTrue(MarketSystem.trendRiskLabel("Low").contains("normal"))
+        assertTrue(MarketSystem.trendRiskLabel("Moderate").contains("watch"))
+        assertTrue(MarketSystem.trendRiskLabel("High").contains("warning"))
+        assertTrue(MarketSystem.trendRiskLabel("Unexpected").contains("UNKNOWN"))
+    }
+
+    @Test
     fun trendRiskThresholdsAreInclusiveAndSafeForExtremeValues() {
         assertEquals("Low", MarketSystem.trendRiskFor(7))
         assertEquals("Low", MarketSystem.trendRiskFor(-7))
