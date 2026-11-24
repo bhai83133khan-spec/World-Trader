@@ -66,11 +66,16 @@ object MarketSystem {
     fun canSell(inventory: Int, quantity: Int): Boolean =
         quantity > 0 && inventory >= 0 && inventory.toLong() >= quantity.toLong()
 
-    fun updatedStockAfterBuy(quote: MarketQuote, quantity: Int): Int =
-        (quote.availableStock.toLong().coerceAtLeast(0L) - quantity.toLong().coerceAtLeast(0L))
-            .coerceIn(0L, MAX_INT).toInt()
+    fun updatedStockAfterBuy(quote: MarketQuote, quantity: Int): Int {
+        val stock = quote.availableStock.coerceAtLeast(0)
+        if (quantity <= 0 || quantity > stock) return stock
+        return (stock.toLong() - quantity.toLong()).coerceIn(0L, MAX_INT).toInt()
+    }
 
-    fun updatedStockAfterSell(quote: MarketQuote, quantity: Int): Int =
-        (quote.availableStock.toLong().coerceAtLeast(0L) + quantity.toLong().coerceAtLeast(0L))
-            .coerceIn(0L, MAX_INT).toInt()
+
+    fun updatedStockAfterSell(quote: MarketQuote, quantity: Int): Int {
+        val stock = quote.availableStock.coerceAtLeast(0)
+        if (quantity <= 0) return stock
+        return (stock.toLong() + quantity.toLong()).coerceIn(0L, MAX_INT).toInt()
+    }
 }
