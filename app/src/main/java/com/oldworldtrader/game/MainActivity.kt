@@ -1,4 +1,5 @@
 package com.oldworldtrader.game
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,26 +13,135 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-class MainActivity:ComponentActivity(){override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{TraderGame()}}}
-private data class Good(val name:String,val price:Int)
-private data class City(val name:String,val cost:Int,val defense:Int,val people:Int=500)
-private data class Ship(val name:String,val cost:Int,val capacity:Int)
-private fun price(g:Good,city:Int,year:Int)= (g.price*(100+city*23)*(100+(year-1)*3)/10000).coerceAtLeast(1)
-@Composable private fun TraderGame(){
- val goods=listOf(Good("Spices",90),Good("Silk",150),Good("Iron",70),Good("Wood",45),Good("Wheat",30))
- val base=listOf(City("Alexandria",6000,20,1200),City("Venice",12000,40,2400),City("Muscat",4500,15,900),City("Delhi",8000,25,1800),City("Baghdad",9000,30,2000))
- val ships=listOf(Ship("Small Boat",500,20),Ship("Merchant Ship",2500,60),Ship("Cargo Ship",8000,150))
- var tab by remember{mutableIntStateOf(0)};var gold by remember{mutableIntStateOf(5000)};var year by remember{mutableIntStateOf(1)};var cityIdx by remember{mutableIntStateOf(0)}
- var cargo by remember{mutableStateOf(mapOf<String,Int>())};var shop by remember{mutableStateOf(mapOf<String,Int>())};var fleet by remember{mutableStateOf(listOf(ships[0]))};var capBonus by remember{mutableIntStateOf(0)};var owned by remember{mutableStateOf(setOf<String>())}
- var army by remember{mutableIntStateOf(0)};var population by remember{mutableStateOf(base.associate{it.name to it.people})};var cityDetail by remember{mutableStateOf<String?>(null)};var buildingLevels by remember{mutableStateOf(mapOf<String,Map<String,Int>>())};var houseLevels by remember{mutableStateOf(mapOf<String,Int>())};var newCities by remember{mutableStateOf(listOf<City>())};var cityName by remember{mutableStateOf("")};var qty by remember{mutableIntStateOf(1)};var msg by remember{mutableStateOf("Recruit troops, see population, and found new cities.")}
- val cities=base+newCities;val current=cities.getOrElse(cityIdx){base[0]};val capacity=fleet.sumOf{it.capacity}+capBonus;val tabs=listOf("Shop","Cities","Ships","Market","Army")
- MaterialTheme(colorScheme=lightColorScheme(primary=Color(0xFF285743))){Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))){Column(Modifier.fillMaxWidth().background(Color(0xFF1E342B)).padding(12.dp)){Text("⚓ OLD WORLD TRADER",color=Color(0xFFF2D49A),fontWeight=FontWeight.Bold);Text("Gold $gold | Cargo ${cargo.values.sum()}/$capacity | Fleet ${fleet.size} | Soldiers $army | Year $year",color=Color.White)}
- ScrollableTabRow(selectedTabIndex=tab){tabs.forEachIndexed{i,label->Tab(selected=tab==i,onClick={tab=i},text={Text(label)})}}
- Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(10.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Text(msg);when(tab){
-0->{Text("SHOP STOCKROOM",fontWeight=FontWeight.Bold);Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){Button(onClick={qty=(qty-1).coerceAtLeast(1)}){Text("-")};Text("Qty $qty",Modifier.padding(8.dp));Button(onClick={qty++}){Text("+")}};goods.forEach{g->Text("${g.name}: cargo ${cargo[g.name]?:0} / shop ${shop[g.name]?:0}");Button(enabled=(cargo[g.name]?:0)>=qty,onClick={cargo=cargo+(g.name to ((cargo[g.name]?:0)-qty));shop=shop+(g.name to ((shop[g.name]?:0)+qty));msg="Added ${g.name} to shop stock"},modifier=Modifier.fillMaxWidth()){Text("Stock in shop ×$qty")}}
-1->{if(cityDetail!=null){val cn=cityDetail!!;Text("🏙️ CITY: $cn",fontWeight=FontWeight.Bold);Text("People: ${population[cn]?:0}");Text("Housing level: ${houseLevels[cn]?:1}");val buildings=listOf("Hospital","Police","Army Barracks","Temple","Park");buildings.forEach{b->val lvl=buildingLevels[cn]?.get(b)?:0;Text("$b • Level $lvl");Button(enabled=gold>=500*(lvl+1),onClick={gold-=500*(lvl+1);buildingLevels=buildingLevels+(cn to ((buildingLevels[cn]?: emptyMap())+(b to (lvl+1))));houseLevels=houseLevels+(cn to ((houseLevels[cn]?:1)+1));population=population+(cn to ((population[cn]?:0)+100*(houseLevels[cn]?:1)));msg="$b upgraded; housing upgraded automatically"},modifier=Modifier.fillMaxWidth()){Text("Upgrade $b • ${500*(lvl+1)} gold")}};Button(onClick={cityDetail=null},modifier=Modifier.fillMaxWidth()){Text("Back to city list")}}else{Text("CITIES • POPULATION",fontWeight=FontWeight.Bold);cities.forEachIndexed{i,c->Column(Modifier.fillMaxWidth().padding(5.dp)){Text("${c.name} • value ${c.cost} • defense ${c.defense}");Text("👥 Population: ${population[c.name]?:c.people}");Text(if(c.name in owned)"Owned city" else "Independent city");Button(onClick={cityIdx=i;msg="Travelled to ${c.name}"},modifier=Modifier.fillMaxWidth()){Text("Travel")};Button(enabled=c.name in owned,onClick={cityDetail=c.name},modifier=Modifier.fillMaxWidth()){Text("Open / Manage city")};Button(enabled=c.name !in owned&&gold>=c.cost,onClick={gold-=c.cost;owned=owned+c.name;msg="Bought ${c.name}"},modifier=Modifier.fillMaxWidth()){Text("Buy city • ${c.cost}")};Button(enabled=c.name in owned,onClick={gold+=c.cost*80/100;owned=owned-c.name;msg="Sold city"},modifier=Modifier.fillMaxWidth()){Text("Sell city")}}};Text("Owned: ${owned.joinToString()}")}}
-2->{Text("SHIPYARD");Text("Capacity $capacity");Button(enabled=gold>=800,onClick={gold-=800;capBonus+=25},modifier=Modifier.fillMaxWidth()){Text("Upgrade capacity • 800")};ships.forEach{s->Button(enabled=gold>=s.cost,onClick={gold-=s.cost;fleet=fleet+s;msg="Purchased ${s.name}"},modifier=Modifier.fillMaxWidth()){Text("Buy ${s.name} • ${s.cost}")}}}
-3->{Text("MARKET • ${current.name}",fontWeight=FontWeight.Bold);Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically){Button(onClick={qty=(qty-1).coerceAtLeast(1)}){Text("-")};Text("Qty $qty",Modifier.padding(8.dp));Button(onClick={qty++}){Text("+")}};goods.forEach{g->val p=price(g,cityIdx,year);val old=price(g,cityIdx,(year-1).coerceAtLeast(1));Column(Modifier.fillMaxWidth().padding(5.dp)){Text("${g.name} • $p gold",fontWeight=FontWeight.Bold);Text("${if(p>=old)"↑ RISING" else "↓ FALLING"} • Cargo ${cargo[g.name]?:0} • Shop ${shop[g.name]?:0}");Row{Button(enabled=gold>=p*qty&&cargo.values.sum()+qty<=capacity,onClick={gold-=p*qty;cargo=cargo+(g.name to ((cargo[g.name]?:0)+qty));msg="Bought $qty ${g.name}"},modifier=Modifier.weight(1f)){Text("Buy")};Button(enabled=(cargo[g.name]?:0)>=qty,onClick={gold+=p*qty;cargo=cargo+(g.name to ((cargo[g.name]?:0)-qty));msg="Sold $qty ${g.name}"},modifier=Modifier.weight(1f)){Text("Sell")}}}}
-4->{Text("ARMY • RECRUIT & CONQUER",fontWeight=FontWeight.Bold);Text("Army: $army soldiers");Button(enabled=gold>=100,onClick={gold-=100;army+=10;msg="10 soldiers recruited"},modifier=Modifier.fillMaxWidth()){Text("Recruit 10 • 100 gold")};Button(enabled=gold>=500,onClick={gold-=500;army+=60;msg="60 soldiers recruited"},modifier=Modifier.fillMaxWidth()){Text("Recruit 60 • 500 gold")};cities.filter{it.name!=current.name&&it.name !in owned}.forEach{target->Button(enabled=army>=target.defense,onClick={army-=target.defense;owned=owned+target.name;msg="Conquered ${target.name}"},modifier=Modifier.fillMaxWidth()){Text("Conquer ${target.name} • ${target.defense} soldiers")}};Text("CREATE NEW CITY",fontWeight=FontWeight.Bold);OutlinedTextField(cityName,onValueChange={cityName=it},label={Text("City name")},modifier=Modifier.fillMaxWidth());Button(enabled=cityName.trim().length>=3&&gold>=2500,onClick={gold-=2500;val c=City(cityName.trim(),2500,10,300);newCities=newCities+c;population=population+(c.name to c.people);houseLevels=houseLevels+(c.name to 1);buildingLevels=buildingLevels+(c.name to emptyMap());cityName="";msg="Settlement founded!"},modifier=Modifier.fillMaxWidth()){Text("Found city • 2500 gold")}}
-};val income=owned.sumOf{(population[it]?:0)/10}+newCities.sumOf{(population[it.name]?:0)/10};Text("Annual income estimate: $income gold");Button(onClick={gold+=income;year++;population=population.mapValues{(k,v)->if(k in owned||newCities.any{it.name==k})v+v/20 else v};msg="Year advanced: income collected and population growth"},modifier=Modifier.fillMaxWidth()){Text("Advance year")}}}}
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { OldWorldTraderApp() }
+    }
+}
+
+@Composable
+private fun OldWorldTraderApp() {
+    var gold by remember { mutableIntStateOf(12000) }
+    var year by remember { mutableIntStateOf(1) }
+    var tab by remember { mutableIntStateOf(0) }
+    var selectedCityId by remember { mutableStateOf<String?>(null) }
+    var selectedCountry by remember { mutableStateOf("Ottoman Empire") }
+    var quantity by remember { mutableIntStateOf(1) }
+    var army by remember { mutableIntStateOf(0) }
+    var message by remember { mutableStateOf("Build your city, grow population, unlock new technologies.") }
+    var cityName by remember { mutableStateOf("") }
+    var cargo by remember { mutableStateOf(mapOf<String, Int>()) }
+    var cities by remember { mutableStateOf(listOf(
+        CityData("alex","Alexandria","Egypt",1200,6000,20),
+        CityData("ven","Venice","Italy",2400,12000,40),
+        CityData("mus","Muscat","Oman",900,4500,15),
+        CityData("del","Delhi","India",1800,8000,25),
+        CityData("bag","Baghdad","Iraq",2000,9000,30)
+    )) }
+    val current = cities.firstOrNull { it.id == selectedCityId }
+    val tabs = listOf("My City","City Travel","Country","Market","Army")
+    MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF285743))) {
+        Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))) {
+            Column(Modifier.fillMaxWidth().background(Color(0xFF1E342B)).padding(12.dp)) {
+                Text("⚓ OLD WORLD TRADER", color=Color(0xFFF2D49A), fontWeight=FontWeight.Bold)
+                Text("Gold $gold • Army $army • Year $year", color=Color.White)
+            }
+            ScrollableTabRow(selectedTabIndex=tab) {
+                tabs.forEachIndexed { index, label -> Tab(selected=tab==index,onClick={tab=index;selectedCityId=null},text={Text(label)}) }
+            }
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text(message)
+                when(tab) {
+                    0 -> {
+                        if(current == null) {
+                            Text("SETTLEMENTS",fontWeight=FontWeight.Bold)
+                            cities.forEach { c ->
+                                Card(Modifier.fillMaxWidth()) {
+                                    Column(Modifier.padding(12.dp)) {
+                                        Text("${c.name} • ${c.country}",fontWeight=FontWeight.Bold)
+                                        Text("People: ${c.population} • City value ${c.treasuryValue}")
+                                        Button(onClick={selectedCityId=c.id},modifier=Modifier.fillMaxWidth()) { Text("Open City") }
+                                    }
+                                }
+                            }
+                            OutlinedTextField(cityName,onValueChange={cityName=it},label={Text("Name your new city")},modifier=Modifier.fillMaxWidth())
+                            Button(enabled=gold>=2500&&cityName.trim().length>=3,onClick={
+                                gold-=2500
+                                val new=CityData("city${cities.size+1}",cityName.trim(),selectedCountry,300,2500,10,true)
+                                cities=cities+new;cityName="";message="New settlement founded!"
+                            },modifier=Modifier.fillMaxWidth()){Text("Found city • 2,500 gold")}
+                        } else {
+                            Text("CITY MANAGEMENT: ${current.name}",fontWeight=FontWeight.Bold)
+                            Text("Population: ${current.population} • Treasury value: ${current.treasuryValue}")
+                            Text("Housing level: ${current.housingLevel}")
+                            EconomyLogic.buildingSpecs.forEach { spec ->
+                                val lvl=current.buildings[spec.name]?:0
+                                val cost=EconomyLogic.upgradeCost(spec,lvl)
+                                val locked= current.population<spec.unlockPopulation
+                                Text("${spec.name} • Level ${lvl} • ${spec.description}")
+                                Text(if(locked) "Unlock at ${spec.unlockPopulation} people" else "Upgrade cost: $cost")
+                                Button(enabled=!locked&&gold>=cost,onClick={
+                                    gold-=cost
+                                    val updated=current.copy(buildings=current.buildings.toMutableMap(),unlocked=current.unlocked.toMutableSet())
+                                    updated.buildings[spec.name]=lvl+1
+                                    updated.housingLevel+=1
+                                    updated.population+=spec.populationBoost+80
+                                    if(spec.name=="Power Plant")updated.unlocked.add("Electricity")
+                                    cities=cities.map{if(it.id==updated.id)updated else it}
+                                    message="${spec.name} upgraded; housing and people increased."
+                                },modifier=Modifier.fillMaxWidth()){Text("Build / Upgrade • ${spec.name}")}
+                            }
+                            Text("Unlocked: ${current.unlocked.joinToString()}")
+                            Button(onClick={selectedCityId=null},modifier=Modifier.fillMaxWidth()){Text("Back to city list")}
+                        }
+                    }
+                    1 -> {
+                        Text("CITY TRAVEL",fontWeight=FontWeight.Bold)
+                        cities.forEach { c -> Button(onClick={selectedCityId=c.id;message="Travelled to ${c.name}"},modifier=Modifier.fillMaxWidth()){Text("${c.name} • ${c.country}")} }
+                    }
+                    2 -> {
+                        Text("COUNTRY TRAVEL",fontWeight=FontWeight.Bold)
+                        listOf("Egypt","Italy","Oman","India","Iraq","Ottoman Empire","Persia").forEach { country ->
+                            Button(onClick={selectedCountry=country;message="Travelled to $country"},modifier=Modifier.fillMaxWidth()){Text("Travel to $country")}
+                        }
+                        Text("Current country: $selectedCountry")
+                    }
+                    3 -> {
+                        Text("MARKET • ${current?.name ?: "Select a city"}",fontWeight=FontWeight.Bold)
+                        Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                            Button(onClick={quantity=(quantity-1).coerceAtLeast(1)}){Text("-")}
+                            Text("Quantity $quantity",Modifier.padding(10.dp))
+                            Button(onClick={quantity=(quantity+1).coerceAtMost(99)}){Text("+")}
+                        }
+                        EconomyLogic.goods.forEach { good ->
+                            val cityIdx=cities.indexOf(current).coerceAtLeast(0)
+                            val price=EconomyLogic.marketPrice(good,cityIdx,year)
+                            Text("${good.name} • ${price} gold • Stock ${cargo[good.name]?:0}")
+                            Row {
+                                Button(enabled=gold>=price*quantity,onClick={gold-=price*quantity;cargo=cargo+(good.name to ((cargo[good.name]?:0)+quantity));message="Bought ${quantity} ${good.name}"},modifier=Modifier.weight(1f)){Text("Buy")}
+                                Button(enabled=(cargo[good.name]?:0)>=quantity,onClick={gold+=price*quantity;cargo=cargo+(good.name to ((cargo[good.name]?:0)-quantity));message="Sold ${quantity} ${good.name}"},modifier=Modifier.weight(1f)){Text("Sell")}
+                            }
+                        }
+                    }
+                    4 -> {
+                        Text("ARMY RECRUITMENT",fontWeight=FontWeight.Bold)
+                        Text("Soldiers: $army")
+                        Button(enabled=gold>=100,onClick={gold-=100;army+=10;message="10 troops recruited"},modifier=Modifier.fillMaxWidth()){Text("Recruit 10 • 100 gold")}
+                        Button(enabled=gold>=500,onClick={gold-=500;army+=60;message="60 troops recruited"},modifier=Modifier.fillMaxWidth()){Text("Recruit 60 • 500 gold")}
+                        cities.filter{!it.owned}.forEach { target ->
+                            Button(enabled=army>=target.defense,onClick={army-=target.defense;cities=cities.map{if(it.id==target.id)it.copy(owned=true) else it};message="Conquered ${target.name}"},modifier=Modifier.fillMaxWidth()){Text("Conquer ${target.name} • requires ${target.defense}")}
+                        }
+                    }
+                }
+                Button(onClick={
+                    year++
+                    cities=cities.map{if(it.owned)it.copy(population=it.population+EconomyLogic.populationGrowth(it))else it}
+                    gold+=cities.filter{it.owned}.sumOf{it.population/20}
+                    message="Year advanced: city population growth and income collected."
+                },modifier=Modifier.fillMaxWidth()){Text("Advance Year")}
+            }
+        }
+    }
 }
