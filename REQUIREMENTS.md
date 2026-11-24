@@ -17,6 +17,7 @@
 
 ### Trade and markets
 - [x] City-specific market prices and price trend indicators
+- [x] Low/Moderate/High trend-risk warnings (8%/20% absolute trend thresholds; boundary and extreme-value tests)
 - [x] Inventory/stock quantities and stock-limited buying
 - [x] Buying and selling with quantity, affordability, inventory, and stock validation
 - [ ] Separate: own-city trade, city travel/trade, and country-level trade
@@ -57,6 +58,7 @@ Implemented in repository:
 - City-specific market transaction engine for market quotes, price trends, stock and cargo validation
 - **Market tab integration:** select a trading port; show city/year/stock-aware prices and trend; track port stock independently and shared cargo; buy/sell through the transaction engine with quantity, affordability, inventory and overflow checks
 - **Seasonal market events:** repeatable commodity/city/year supply-surplus, shortage, high-demand, high-supply, or balanced factors are integrated into the port UI; trends compare current and prior-year event factors
+- **Trend-risk warnings:** absolute price trend of 8%+ is Moderate and 20%+ is High; the classifier uses Long arithmetic to safely handle extreme input values
 - JUnit test added for city-stock isolation and separate port quotes
 - GitHub Actions runs unit tests before the debug APK build
 
