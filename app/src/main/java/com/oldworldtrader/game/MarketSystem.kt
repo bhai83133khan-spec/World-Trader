@@ -75,12 +75,15 @@ object MarketSystem {
             trend <= -5 -> "Falling"
             else -> "Stable"
         }
-        val risk = when {
-            kotlin.math.abs(trend) >= 20 -> "High"
-            kotlin.math.abs(trend) >= 8 -> "Moderate"
-            else -> "Low"
-        }
+        val risk = trendRiskFor(trend)
         return MarketQuote(price, trend, label, stock.coerceAtLeast(0), eventLabel, risk)
+    }
+
+    /** Inclusive risk thresholds; Long arithmetic safely handles Int.MIN_VALUE. */
+    fun trendRiskFor(trendPercent: Int): String = when {
+        kotlin.math.abs(trendPercent.toLong()) >= 20L -> "High"
+        kotlin.math.abs(trendPercent.toLong()) >= 8L -> "Moderate"
+        else -> "Low"
     }
 
     private fun scaledPrice(basePrice: Int, stockFactor: Int, demand: Int, supply: Int): Int {
