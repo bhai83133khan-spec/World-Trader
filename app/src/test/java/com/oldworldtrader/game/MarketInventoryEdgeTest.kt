@@ -30,4 +30,24 @@ class MarketInventoryEdgeTest {
         assertEquals(3, initial.cargoAmount("Wheat"))
         assertEquals(120, initial.stock("alex", "Wheat"))
     }
+
+    @Test
+    fun corruptedNegativeSavedStockAndCargoAreSanitizedBeforeTransactions() {
+        val corrupted = MarketState(
+            cityStocks = mapOf("alex" to mapOf("Wheat" to -40)),
+            cargo = mapOf("Wheat" to -7)
+        )
+        assertEquals(0, corrupted.stock("alex", "Wheat"))
+        assertEquals(0, corrupted.cargoAmount("Wheat"))
+
+        val zeroStockQuote = quote.copy(availableStock = 0)
+        val buy = corrupted.buy("alex", wheat, zeroStockQuote, quantity = 1, gold = 100)
+        val sell = corrupted.sell("alex", wheat, zeroStockQuote, quantity = 1, gold = 100)
+        assertFalse(buy.success)
+        assertFalse(sell.success)
+        assertEquals(0, buy.state.stock("alex", "Wheat"))
+        assertEquals(0, buy.state.cargoAmount("Wheat"))
+        assertEquals(0, sell.state.stock("alex", "Wheat"))
+        assertEquals(0, sell.state.cargoAmount("Wheat"))
+    }
 }
