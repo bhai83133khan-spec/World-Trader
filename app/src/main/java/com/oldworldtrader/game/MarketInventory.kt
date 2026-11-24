@@ -24,18 +24,7 @@ data class MarketState(
         return copy(cityStocks = restocked)
     }
 
-    /** Refill depleted port stock once per in-game year without reducing surplus stock. */
-    fun restockYearly(refillAmount: Int = 25, stockCap: Int = 120): MarketState {
-        if (refillAmount <= 0 || stockCap < 0 || cityStocks.isEmpty()) return this
-        val restocked = cityStocks.mapValues { (_, goods) ->
-            goods.mapValues { (_, currentStock) ->
-                val stock = currentStock.coerceAtLeast(0)
-                if (stock >= stockCap) stock
-                else (stock.toLong() + refillAmount.toLong()).coerceAtMost(stockCap.toLong()).toInt()
-            }
-        }
-        return copy(cityStocks = restocked)
-    }
+
 
     fun buy(cityId: String, good: TradeGood, quote: MarketQuote, quantity: Int, gold: Int): MarketTransaction {
         if (quantity <= 0) return MarketTransaction(this, gold, false, "Quantity must be at least 1.")
