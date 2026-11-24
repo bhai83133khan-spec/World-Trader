@@ -82,7 +82,7 @@ private fun OldWorldTraderApp() {
                                 val locked= current.population<spec.unlockPopulation
                                 Text("${spec.name} • Level ${lvl} • ${spec.description}")
                                 Text(if(locked) "Unlock at ${spec.unlockPopulation} people" else "Upgrade cost: $cost")
-                                Button(enabled=!locked&&gold>=cost,onClick={
+                                Button(enabled = !locked && gold >= cost,onClick={
                                     gold-=cost
                                     val updated=current.copy(buildings=current.buildings.toMutableMap(),unlocked=current.unlocked.toMutableSet())
                                     updated.buildings[spec.name]=lvl+1
