@@ -82,7 +82,7 @@ object GameSaveStore {
             val buildings = JSONObject()
             city.buildings.forEach { (name, level) -> buildings.put(name, level.coerceAtLeast(0)) }
             val unlocked = JSONArray()
-            city.unlocked.forEach(unlocked::put)
+            city.unlocked.forEach { unlocked.put(it) }
             cityArray.put(
                 JSONObject()
                     .put("id", city.id)
