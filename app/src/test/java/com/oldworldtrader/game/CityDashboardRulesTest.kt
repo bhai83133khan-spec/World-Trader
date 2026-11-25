@@ -88,7 +88,7 @@ class CityDashboardRulesTest {
     fun nextYearCityPreviewShowsServiceCostsAndNetContribution() {
         val city = CityData(
             "home", "Home", "Egypt", 1_200, 500, 10, owned = true,
-            controlledBy = EnemyKingdomSystem.PLAYER_FACTION,
+            controlledBy = WorldTurnSystem.PLAYER_FACTION,
             buildings = mutableMapOf("Hospital" to 1, "Park" to 1)
         )
         assertEquals(60, CityDashboardRules.nextYearIncome(city))
