@@ -466,7 +466,7 @@ private fun OldWorldTraderApp() {
                             marketState = marketState.restockYearly()
                             cities = cities.map {
                                 if (it.owned) it.copy(
-                                    population = (it.population.toLong() + EconomyLogic.populationGrowth(it).toLong())
+                                    population = (it.population.toLong() + CityGrowthSystem.annualGrowth(it).toLong())
                                         .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
                                 ) else it
                             }

@@ -60,4 +60,16 @@ class CityDashboardRulesTest {
         assertEquals("Excellent", CityDashboardRules.welfareLabel(powered))
         assertEquals("Powered", CityDashboardRules.electricityLabel(powered))
     }
+
+    @Test
+    fun dashboardGrowthPreviewRespectsHousingCapacityAndUpgrade() {
+        val nearCapacity = CityData("near", "Near Capacity", "Egypt", 510, 0, 0, owned = true)
+        assertEquals(0, CityDashboardRules.annualGrowth(nearCapacity))
+        assertEquals(25, CityDashboardRules.nextYearIncome(nearCapacity))
+
+        val expandedHousing = nearCapacity.copy(housingLevel = 2)
+        assertEquals(15, CityDashboardRules.annualGrowth(expandedHousing))
+        assertEquals(26, CityDashboardRules.nextYearIncome(expandedHousing))
+    }
+
 }

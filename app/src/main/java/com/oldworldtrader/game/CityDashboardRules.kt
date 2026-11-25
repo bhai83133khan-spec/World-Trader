@@ -2,7 +2,7 @@ package com.oldworldtrader.game
 
 /** Values shown on the owned-city dashboard, derived from the rules the game currently applies. */
 object CityDashboardRules {
-    fun annualGrowth(city: CityData): Int = EconomyLogic.populationGrowth(city)
+    fun annualGrowth(city: CityData): Int = CityGrowthSystem.annualGrowth(city)
 
     /** The year-advance action collects income after applying that year's population growth. */
     fun nextYearIncome(city: CityData): Int {
