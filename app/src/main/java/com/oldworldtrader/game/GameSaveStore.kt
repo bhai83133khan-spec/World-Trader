@@ -12,7 +12,8 @@ data class SavedGameState(
     val cities: List<CityData>,
     val marketState: MarketState,
     val shopState: ShopState = ShopState(),
-    val fleetState: FleetState = FleetState()
+    val fleetState: FleetState = FleetState(),
+    val researchState: ResearchState = ResearchState()
 )
 
 /** Lightweight, offline save snapshot stored in app-private preferences. */
@@ -97,6 +98,11 @@ object GameSaveStore {
                 voyage = savedVoyage
             )
 
+            val researchedArray = root.optJSONArray("researchedTechIds")
+            val researchedIds = researchedArray?.let { array ->
+                (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }.toSet()
+            } ?: emptySet()
+
             SavedGameState(
                 gold = root.optInt("gold", 12000).coerceAtLeast(0),
                 year = root.optInt("year", 1).coerceAtLeast(1),
@@ -105,7 +111,8 @@ object GameSaveStore {
                 cities = cities,
                 marketState = MarketState(cityStocks = stocks, cargo = cargo),
                 shopState = ShopState(shops = shops),
-                fleetState = fleetState
+                fleetState = fleetState,
+                researchState = ResearchSystem.restore(researchedIds)
             )
         } catch (_: Exception) {
             null
@@ -118,6 +125,9 @@ object GameSaveStore {
             .put("year", state.year.coerceAtLeast(1))
             .put("army", state.army.coerceAtLeast(0))
             .put("selectedCountry", state.selectedCountry)
+        val researchedArray = JSONArray()
+        state.researchState.researchedTechIds.sorted().forEach { researchedArray.put(it) }
+        root.put("researchedTechIds", researchedArray)
         val cityArray = JSONArray()
         state.cities.forEach { city ->
             val buildings = JSONObject()

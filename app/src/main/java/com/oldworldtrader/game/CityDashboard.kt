@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 fun CityDashboard(
     city: CityData,
     gold: Int,
-    onUpgrade: (BuildingSpec) -> Unit
+    onUpgrade: (BuildingSpec) -> Unit,
+    upgradeDiscountPercent: Int = 0
 ) {
     Text("CITY DASHBOARD • ${city.name}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
     if (!city.owned) {
@@ -61,8 +62,8 @@ fun CityDashboard(
     Text("BUILDINGS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
     EconomyLogic.buildingSpecs.forEach { spec ->
         val level = (city.buildings[spec.name] ?: 0).coerceAtLeast(0)
-        val cost = EconomyLogic.upgradeCost(spec, level)
-        val blockReason = CityDashboardRules.upgradeBlockReason(city, spec, gold)
+        val cost = ResearchSystem.applyDiscount(EconomyLogic.upgradeCost(spec, level), upgradeDiscountPercent)
+        val blockReason = CityDashboardRules.upgradeBlockReason(city, spec, gold, upgradeDiscountPercent)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("${spec.name} • Level $level", fontWeight = FontWeight.Bold)

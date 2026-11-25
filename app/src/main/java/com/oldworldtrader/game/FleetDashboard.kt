@@ -21,14 +21,15 @@ fun FleetDashboard(
     onPurchase: (String) -> Unit,
     onSelectShip: (String) -> Unit,
     onDepart: (String) -> Unit,
-    onAdvanceDay: () -> Unit
+    onAdvanceDay: () -> Unit,
+    cargoCapacityBonus: Int = 0
 ) {
     val portName = cities.firstOrNull { it.id == fleetState.currentPortId }?.name ?: fleetState.currentPortId
     val selected = FleetSystem.selectedShip(fleetState)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("FLEET & SEA ROUTES", fontWeight = FontWeight.Bold)
         Text("Current port: $portName")
-        Text("Cargo used: ${FleetSystem.cargoUsed(cargo)} / ${FleetSystem.selectedCapacity(fleetState)}")
+        Text("Cargo used: ${FleetSystem.cargoUsed(cargo)} / ${FleetSystem.selectedCapacity(fleetState) + cargoCapacityBonus}")
         Text("Selected vessel: ${selected?.name ?: "None"}")
         FleetSystem.ships.forEach { ship ->
             Card(Modifier.fillMaxWidth()) {

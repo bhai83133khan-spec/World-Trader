@@ -36,6 +36,15 @@ class CityDashboardRulesTest {
     }
 
     @Test
+    fun urbanEngineeringDiscountChangesUpgradeAffordabilityAndErrorMessage() {
+        val house = EconomyLogic.buildingSpecs.first { it.name == "House" }
+        val city = CityData("alex", "Alexandria", "Egypt", 0, 6000, 20, owned = true)
+        assertNull(CityDashboardRules.upgradeBlockReason(city, house, 135, 10))
+        assertEquals("Need 135 gold; you have 134.", CityDashboardRules.upgradeBlockReason(city, house, 134, 10))
+    }
+
+
+    @Test
     fun dashboardSummariesReflectBuildingsAndOnlyTreatPositiveLevelsAsBuilt() {
         val city = CityData(
             "alex", "Alexandria", "Egypt", 1200, 6000, 20, owned = true,

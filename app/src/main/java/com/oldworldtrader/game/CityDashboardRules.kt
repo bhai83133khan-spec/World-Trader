@@ -29,12 +29,12 @@ object CityDashboardRules {
             "Not available"
         }
 
-    fun upgradeBlockReason(city: CityData, spec: BuildingSpec, gold: Int): String? {
+    fun upgradeBlockReason(city: CityData, spec: BuildingSpec, gold: Int, upgradeDiscountPercent: Int = 0): String? {
         if (!city.owned) return "You must own this city before building here."
         if (city.population < spec.unlockPopulation) return "Requires ${spec.unlockPopulation} people."
         val level = (city.buildings[spec.name] ?: 0).coerceAtLeast(0)
         if (level == Int.MAX_VALUE) return "Maximum level reached."
-        val cost = EconomyLogic.upgradeCost(spec, level)
+        val cost = ResearchSystem.applyDiscount(EconomyLogic.upgradeCost(spec, level), upgradeDiscountPercent)
         if (gold < cost) return "Need $cost gold; you have $gold."
         return null
     }
