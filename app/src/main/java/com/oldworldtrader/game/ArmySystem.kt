@@ -84,7 +84,7 @@ object ArmySystem {
             val level = (damagedBuildings[building] ?: 0).coerceAtLeast(0)
             if (level > 0) damagedBuildings[building] = level - 1
         }
-        val captured = target.copy(owned = true, defense = damagedDefense, buildings = damagedBuildings)
+        val captured = target.copy(owned = true, controlledBy = EnemyKingdomSystem.PLAYER_ID, defense = damagedDefense, buildings = damagedBuildings)
         return ArmyBattleResult(true, true, survivors, captured, casualties,
             "Victory at " + target.name + "! Lost " + casualties + " soldiers; " + survivors + " remain. City captured with defense reduced.")
     }

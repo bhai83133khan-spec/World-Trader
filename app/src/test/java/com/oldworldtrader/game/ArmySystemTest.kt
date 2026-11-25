@@ -55,6 +55,16 @@ class ArmySystemTest {
         assertEquals(56, result.remainingArmy)
         assertTrue(result.capturedCity!!.owned)
         assertEquals(15, result.capturedCity!!.defense)
+        assertEquals(EnemyKingdomSystem.PLAYER_ID, result.capturedCity!!.controlledBy)
+    }
+
+    @Test
+    fun captureTransfersCityFromPreviousControllerToPlayer() {
+        val target = CityData("target", "Target", "Italy", 1_000, 2_000, 20,
+            owned = false, controlledBy = "Rival")
+        val result = ArmySystem.attack(60, target)
+        assertTrue(result.victory)
+        assertEquals(EnemyKingdomSystem.PLAYER_ID, result.capturedCity!!.controlledBy)
     }
 
     @Test
