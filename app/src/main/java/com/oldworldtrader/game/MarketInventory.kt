@@ -39,7 +39,7 @@ data class MarketState(
 
 
 
-    fun buy(cityId: String, good: TradeGood, quote: MarketQuote, quantity: Int, gold: Int): MarketTransaction {
+    fun buy(cityId: String, good: TradeGood, quote: MarketQuote, quantity: Int, gold: Int, cargoCapacity: Int? = null): MarketTransaction {
         if (quantity <= 0) return MarketTransaction(this, gold, false, "Quantity must be at least 1.")
         if (quote.price <= 0 || gold < 0) return MarketTransaction(this, gold, false, "Invalid market price or wallet.")
         val available = stock(cityId, good.name, quote.availableStock)
@@ -47,6 +47,12 @@ data class MarketState(
         val cost = quote.price.toLong() * quantity.toLong()
         if (cost > gold.toLong()) return MarketTransaction(this, gold, false, "Not enough gold.")
         val currentCargo = cargoAmount(good.name)
+        if (cargoCapacity != null) {
+            if (cargoCapacity < 0) return MarketTransaction(this, gold, false, "Invalid ship cargo capacity.")
+            val totalCargo = cargo.values.sumOf { it.coerceAtLeast(0).toLong() }
+            if (totalCargo + quantity.toLong() > cargoCapacity.toLong())
+                return MarketTransaction(this, gold, false, "Ship cargo capacity exceeded.")
+        }
         val nextCargoAmount = currentCargo.toLong() + quantity.toLong()
         if (nextCargoAmount > Int.MAX_VALUE) return MarketTransaction(this, gold, false, "Cargo limit exceeded.")
         val nextStocks = cityStocks.toMutableMap()
