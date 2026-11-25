@@ -72,7 +72,8 @@ fun CityDashboard(
     if (CityGarrisonSystem.isPlayerControlled(city)) {
         val capacity = CityGarrisonSystem.capacity(city)
         val stationable = CityGarrisonSystem.maxStationable(fieldArmy, garrison, city)
-        val withdrawable = CityGarrisonSystem.maxWithdrawable(garrison, city)
+        // Include only troops that fit into the field army; near the integer limit a partial withdrawal is still useful.
+        val withdrawable = CityGarrisonSystem.maxWithdrawable(fieldArmy, garrison, city)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("CITY GARRISON", fontWeight = FontWeight.Bold)
@@ -94,15 +95,15 @@ fun CityDashboard(
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        enabled = garrisonActionsEnabled && withdrawable >= 10 && fieldArmy.toLong() + 10L <= Int.MAX_VALUE.toLong(),
+                        enabled = garrisonActionsEnabled && withdrawable >= 10,
                         onClick = { onWithdraw(10) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Withdraw 10") }
                     Button(
-                        enabled = garrisonActionsEnabled && withdrawable > 0 && fieldArmy.toLong() + withdrawable.toLong() <= Int.MAX_VALUE.toLong(),
+                        enabled = garrisonActionsEnabled && withdrawable > 0,
                         onClick = { onWithdraw(withdrawable) },
                         modifier = Modifier.weight(1f)
-                    ) { Text("Withdraw all • $withdrawable") }
+                    ) { Text("Withdraw up to $withdrawable") }
                 }
             }
         }

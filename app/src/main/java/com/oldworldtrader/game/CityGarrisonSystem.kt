@@ -31,9 +31,13 @@ object CityGarrisonSystem {
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
-    /** Largest safe transfer from this city's garrison back into the field army. */
-    fun maxWithdrawable(garrison: Int, city: CityData): Int =
-        if (garrison > 0 && isPlayerControlled(city)) garrison else 0
+    /** Largest safe withdrawal without overflowing the field army's Int storage. */
+    fun maxWithdrawable(fieldArmy: Int, garrison: Int, city: CityData): Int {
+        if (fieldArmy < 0 || garrison <= 0 || !isPlayerControlled(city)) return 0
+        val roomInFieldArmy = Int.MAX_VALUE.toLong() - fieldArmy.toLong()
+        return minOf(garrison.toLong(), roomInFieldArmy.coerceAtLeast(0L))
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
 
     fun station(fieldArmy: Int, garrison: Int, amount: Int, city: CityData): GarrisonTransferResult {
         if (fieldArmy < 0 || garrison < 0 || amount <= 0) return reject(fieldArmy, garrison, "Invalid garrison transfer.")

@@ -18,15 +18,21 @@ class CityGarrisonSystemTest {
     }
 
     @Test
-    fun maxTransferAmountsRespectArmyAndCapacity() {
+    fun maxStationingRespectsArmyAndCityCapacity() {
         assertEquals(80, CityGarrisonSystem.maxStationable(80, 20, city()))
         assertEquals(15, CityGarrisonSystem.maxStationable(80, 85, city()))
         assertEquals(0, CityGarrisonSystem.maxStationable(80, 100, city()))
         assertEquals(0, CityGarrisonSystem.maxStationable(Int.MAX_VALUE, 101, city()))
         assertEquals(0, CityGarrisonSystem.maxStationable(80, 0, city(owned = false)))
-        assertEquals(30, CityGarrisonSystem.maxWithdrawable(30, city()))
-        assertEquals(0, CityGarrisonSystem.maxWithdrawable(-1, city()))
-        assertEquals(0, CityGarrisonSystem.maxWithdrawable(30, city(controller = "Rival")))
+    }
+
+    @Test
+    fun maxWithdrawalAllowsPartialTransferAtFieldArmyIntegerLimit() {
+        assertEquals(30, CityGarrisonSystem.maxWithdrawable(20, 30, city()))
+        assertEquals(5, CityGarrisonSystem.maxWithdrawable(Int.MAX_VALUE - 5, 30, city()))
+        assertEquals(0, CityGarrisonSystem.maxWithdrawable(Int.MAX_VALUE, 30, city()))
+        assertEquals(0, CityGarrisonSystem.maxWithdrawable(-1, 30, city()))
+        assertEquals(0, CityGarrisonSystem.maxWithdrawable(0, 30, city(controller = "Rival")))
     }
 
     @Test
