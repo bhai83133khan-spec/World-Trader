@@ -8,7 +8,7 @@
 ## Required gameplay systems
 
 ### City management
-- [ ] Owned-city dashboard: population, treasury/value, defense, housing, welfare, electricity
+- [x] Owned-city dashboard: population, treasury/value, defense, housing, welfare, electricity
 - [ ] Housing construction and population growth with progression
 - [ ] Building upgrades with costs, requirements, effects, and level display
 - [ ] Hospital, Police Station, Barracks, Temple, Park, Power Plant
@@ -23,7 +23,7 @@
 - [ ] Separate: own-city trade, city travel/trade, and country-level trade
 - [x] Market price changes driven by deterministic seasonal supply/demand events and year-based pricing (CI verified in run #56)
 - [x] Yearly port-stock replenishment refills depleted traded goods up to a cap without reducing surplus stock (unit tests)
-- [ ] Shop ownership and inventory management
+- [x] Shop ownership and inventory management
 
 ### Travel and maritime systems
 - [ ] City travel and country travel as separate navigation systems
@@ -58,10 +58,11 @@ Implemented in repository:
 - City-specific market transaction engine for market quotes, price trends, stock and cargo validation
 - **Market tab integration:** select a trading port; show city/year/stock-aware prices and trend; track port stock independently and shared cargo; buy/sell through the transaction engine with quantity, affordability, inventory and overflow checks
 - **Seasonal market events:** repeatable commodity/city/year supply-surplus, shortage, high-demand, high-supply, or balanced factors are integrated into the port UI; trends compare current and prior-year event factors
+- **City shops:** owned-city gated shop purchase (1,000 gold), cargo-to-shop stocking, customer sales at 25% retail markup, cash collection, offline save/load for shop stock and revenue; transaction tests and APK build verified in CI run #95
 - **Trend-risk warnings:** absolute price trend of 8%+ is Moderate and 20%+ is High; the classifier uses Long arithmetic to safely handle extreme input values
 - JUnit test added for city-stock isolation and separate port quotes
 - GitHub Actions runs unit tests before the debug APK build
 
-**Not yet implemented:** full city management dashboards and services, manual supply/demand controls, separate country trade, shop ownership/stock management, ship/fleet and route systems, kingdom/intelligence/research, comprehensive save/load, tutorial, and on-device QA.
+**Not yet implemented:** additional city services and upkeep, manual supply/demand controls, separate country trade, ship/fleet and route systems, kingdom/intelligence/research, tutorial, and on-device QA.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.
