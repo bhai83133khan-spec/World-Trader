@@ -33,7 +33,9 @@
 
 ### Army and kingdoms
 - [ ] Recruit and maintain army with costs
-- [ ] City defense and conquest calculations
+- [x] City defense and conquest calculations (deterministic rules, capture validation and damage)
+- [x] City Dashboard displays city defense strength including defensive building bonuses
+- [x] Kingdom overview aggregates field army and owned-city defense strength
 - [ ] Kingdom/country systems and strategic progression
 - [ ] Intelligence reports and spy/information mechanics
 
