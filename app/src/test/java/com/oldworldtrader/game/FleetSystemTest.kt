@@ -68,7 +68,7 @@ class FleetSystemTest {
 
     @Test
     fun cannotDepartWithoutShipOrWhileAlreadyAtSea() {
-        val emptyFleet = FleetSystem.restore(emptySet(), null, "alex", null)
+        val emptyFleet = FleetState(ownedShipIds = emptySet(), selectedShipId = "skiff")
         val route = FleetSystem.routesFrom("alex").first()
         assertFalse(FleetSystem.depart(emptyFleet, route.id, 10_000).success)
         val atSea = FleetSystem.depart(FleetState(), route.id, 10_000).state
