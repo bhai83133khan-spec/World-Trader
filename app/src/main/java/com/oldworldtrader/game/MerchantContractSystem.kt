@@ -12,6 +12,10 @@ data class MerchantContractState(
     companion object {
         const val MAX_SAVED_COMPLETIONS = 100
 
+        /** Restore saved completion markers from JSON while keeping the newest bounded entries. */
+        fun restoreCompletedIds(savedIds: Iterable<String>): Set<String> =
+            savedIds.filter(String::isNotBlank).takeLast(MAX_SAVED_COMPLETIONS).toSet()
+
         private fun boundedIds(ids: Set<String>): Set<String> {
             val sorted = ids.asSequence().filter(String::isNotBlank).sorted().toList()
             return sorted.drop((sorted.size - MAX_SAVED_COMPLETIONS).coerceAtLeast(0)).toSet()

@@ -125,9 +125,10 @@ object GameSaveStore {
             }
             val contractsJson = root.optJSONObject("merchantContracts")
             val completedContracts = contractsJson?.optJSONArray("completedIds")?.let { array ->
-                (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }
-                    .takeLast(MerchantContractState.MAX_SAVED_COMPLETIONS)
-            } ?: emptyList()
+                MerchantContractState.restoreCompletedIds(
+                    (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }
+                )
+            } ?: emptySet()
             val contractState = MerchantContractState(
                 year = contractsJson?.optInt("year", 0)?.coerceAtLeast(0) ?: 0,
                 completedContractIds = completedContracts

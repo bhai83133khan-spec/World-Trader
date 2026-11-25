@@ -104,6 +104,15 @@ class MerchantContractSystemTest {
     }
 
     @Test
+    fun restoreCompletionIdsFiltersBlanksAndKeepsNewestHundred() {
+        val saved = (0..120).map { "contract-$it" } + listOf("", "  ")
+        val restored = MerchantContractState.restoreCompletedIds(saved)
+
+        assertEquals(100, restored.size)
+        assertEquals((21..120).map { "contract-$it" }.toSet(), restored)
+    }
+
+    @Test
     fun completedBoardIsResetForNewYearAndRewardScalingIsBounded() {
         val contract = MerchantContractSystem.board("alex", 1).first()
         val result = MerchantContractSystem.complete(contract, "alex", 1, 0,
@@ -111,6 +120,6 @@ class MerchantContractSystemTest {
         assertTrue(result.success)
         assertTrue(MerchantContractSystem.board("alex", 2, result.state).isNotEmpty())
         assertTrue(MerchantContractSystem.board("alex", Int.MAX_VALUE).all { it.rewardGold > 0 })
-        assertEquals(MerchantContractState(year = 2), MerchantContractState(year = 1, completedContractIds = listOf("old")).forYear(2))
+        assertEquals(MerchantContractState(year = 2), MerchantContractState(year = 1, completedContractIds = setOf("old")).forYear(2))
     }
 }
