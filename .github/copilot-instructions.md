@@ -3,6 +3,15 @@
 ## Priority
 Work toward a playable offline release. Make real source-code changes, tests, and commits; do not substitute status comments or planning documents for implementation.
 
+## Priority bugfix slice (before Ships and Sea Trading)
+Address issue #3 first: city travel/entry access and city-specific market pricing.
+1. Fix travel arrival/current-port state so listed destinations can be visited and their markets entered without owning the city.
+2. Keep ownership checks only for founding/ownership actions (e.g. shop building), not basic visiting/trading.
+3. Make prices differentiated per city/port and commodity using deterministic modifiers; prices should remain consistent in a port unless market rules update them.
+4. Add focused tests for travel/entry gating and multiple ports showing distinct prices.
+5. Run unit tests and debug APK build; report artifact and any phone smoke-test limitation.
+Only after this bugfix slice is implemented and verified, resume the Ships and Sea Trading feature below.
+
 ## Next feature slice: Ships and Sea Trading
 Implement a small, end-to-end ship trading loop using the existing Kotlin/Compose architecture and game state/persistence patterns:
 1. Add a ship model with name/type, purchase price, cargo capacity, and owned/selected state.
