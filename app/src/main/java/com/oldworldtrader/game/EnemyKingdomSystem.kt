@@ -126,10 +126,11 @@ object EnemyKingdomSystem {
                     army = resolution.attackerArmy,
                     treasury = (treasury - resolution.report.loot).coerceAtLeast(0)
                 )
-                resolution.report.capturedCity?.let { captured ->
-                    updatedCities = updatedCities.map { if (it.id == target.id) captured else it }
+                val capturedCity = resolution.report.capturedCity
+                if (capturedCity != null) {
+                    updatedCities = updatedCities.map { if (it.id == target.id) capturedCity else it }
                     updatedGarrisons.remove(target.id)
-                } ?: if (stationed > 0) {
+                } else if (stationed > 0) {
                     if (resolution.defenderArmy > 0) updatedGarrisons[target.id] = resolution.defenderArmy
                     else updatedGarrisons.remove(target.id)
                 }
