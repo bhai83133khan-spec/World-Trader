@@ -58,6 +58,38 @@ class ArmySystemTest {
     }
 
     @Test
+    fun successfulSiegeDamagesDefensiveBuildingsButPreservesNonDefensiveBuildings() {
+        val target = city(
+            30,
+            buildings = mapOf("Army Barracks" to 2, "Police Station" to 1, "House" to 3)
+        )
+        val result = ArmySystem.attack(200, target)
+        assertTrue(result.valid)
+        assertTrue(result.victory)
+        val captured = result.capturedCity!!
+        assertEquals(22, captured.defense)
+        assertEquals(1, captured.buildings["Army Barracks"])
+        assertEquals(0, captured.buildings["Police Station"])
+        assertEquals(3, captured.buildings["House"])
+        assertEquals(42, ArmySystem.cityDefense(captured))
+        assertEquals(80, ArmySystem.cityDefense(target))
+    }
+
+    @Test
+    fun failedSiegeDoesNotDamageCityBuildings() {
+        val target = city(
+            30,
+            buildings = mapOf("Army Barracks" to 2, "Police Station" to 1)
+        )
+        val result = ArmySystem.attack(150, target)
+        assertTrue(result.valid)
+        assertFalse(result.victory)
+        assertNull(result.capturedCity)
+        assertEquals(2, target.buildings["Army Barracks"])
+        assertEquals(1, target.buildings["Police Station"])
+    }
+
+    @Test
     fun weakAttackFailsAndConsumesTroopsButDoesNotCapture() {
         val result = ArmySystem.attack(30, city(20))
         assertTrue(result.valid)

@@ -78,7 +78,13 @@ object ArmySystem {
         val survivors = army - casualties
         val damagedDefense = (target.defense.toLong().coerceAtLeast(1L) * 3L / 4L)
             .coerceAtLeast(1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-        val captured = target.copy(owned = true, defense = damagedDefense)
+        // A successful siege damages one level of each defensive building, too.
+        val damagedBuildings = target.buildings.toMutableMap()
+        listOf("Army Barracks", "Police Station").forEach { building ->
+            val level = (damagedBuildings[building] ?: 0).coerceAtLeast(0)
+            if (level > 0) damagedBuildings[building] = level - 1
+        }
+        val captured = target.copy(owned = true, defense = damagedDefense, buildings = damagedBuildings)
         return ArmyBattleResult(true, true, survivors, captured, casualties,
             "Victory at " + target.name + "! Lost " + casualties + " soldiers; " + survivors + " remain. City captured with defense reduced.")
     }
