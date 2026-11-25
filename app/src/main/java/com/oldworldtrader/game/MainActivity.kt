@@ -108,34 +108,24 @@ private fun OldWorldTraderApp() {
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text("Found city • 2,500 gold") }
                         } else {
-                            Text("CITY MANAGEMENT: ${current.name}", fontWeight = FontWeight.Bold)
-                            Text("Population: ${current.population} • Treasury value: ${current.treasuryValue}")
-                            Text("Housing level: ${current.housingLevel}")
-                            EconomyLogic.buildingSpecs.forEach { spec ->
-                                val level = current.buildings[spec.name] ?: 0
-                                val cost = EconomyLogic.upgradeCost(spec, level)
-                                val locked = current.population < spec.unlockPopulation
-                                val maxed = level == Int.MAX_VALUE
-                                Text("${spec.name} • Level $level • ${spec.description}")
-                                Text(when {
-                                    locked -> "Unlock at ${spec.unlockPopulation} people"
-                                    maxed -> "Maximum level reached"
-                                    else -> "Upgrade cost: $cost"
-                                })
-                                Button(
-                                    enabled = !locked && !maxed && gold >= cost,
-                                    onClick = {
-                                        gold -= cost
+                            CityDashboard(
+                                city = current,
+                                gold = gold,
+                                onUpgrade = { spec ->
+                                    val reason = CityDashboardRules.upgradeBlockReason(current, spec, gold)
+                                    if (reason != null) {
+                                        message = reason
+                                    } else {
+                                        val cost = EconomyLogic.upgradeCost(spec, current.buildings[spec.name] ?: 0)
                                         val updated = EconomyLogic.applyUpgrade(current, spec)
+                                        gold -= cost
                                         cities = cities.map { if (it.id == updated.id) updated else it }
-                                        message = "${spec.name} upgraded."
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) { Text("Build / Upgrade • ${spec.name}") }
-                            }
-                            Text("Unlocked: ${current.unlocked.joinToString()}")
+                                        message = "${spec.name} upgraded in ${current.name}."
+                                    }
+                                }
+                            )
                             Button(onClick = { selectedCityId = null }, modifier = Modifier.fillMaxWidth()) {
-                                Text("Back to city list")
+                                Text("Back to settlements")
                             }
                         }
                     }
@@ -259,12 +249,12 @@ private fun OldWorldTraderApp() {
                         Text("ARMY RECRUITMENT", fontWeight = FontWeight.Bold)
                         Text("Soldiers: $army")
                         Button(
-                            enabled = gold >= 100,
+                            enabled = gold >= 100 && army <= Int.MAX_VALUE - 10,
                             onClick = { gold -= 100; army += 10; message = "10 troops recruited" },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Recruit 10 • 100 gold") }
                         Button(
-                            enabled = gold >= 500,
+                            enabled = gold >= 500 && army <= Int.MAX_VALUE - 60,
                             onClick = { gold -= 500; army += 60; message = "60 troops recruited" },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Recruit 60 • 500 gold") }
@@ -283,17 +273,21 @@ private fun OldWorldTraderApp() {
                 }
                 Button(
                     onClick = {
-                        year = (year.toLong() + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                        marketState = marketState.restockYearly()
-                        cities = cities.map {
-                            if (it.owned) it.copy(
-                                population = (it.population.toLong() + EconomyLogic.populationGrowth(it).toLong())
-                                    .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                            ) else it
+                        if (year == Int.MAX_VALUE) {
+                            message = "Maximum year reached."
+                        } else {
+                            year += 1
+                            marketState = marketState.restockYearly()
+                            cities = cities.map {
+                                if (it.owned) it.copy(
+                                    population = (it.population.toLong() + EconomyLogic.populationGrowth(it).toLong())
+                                        .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                                ) else it
+                            }
+                            val income = cities.filter { it.owned }.sumOf { it.population.toLong() / 20L }
+                            gold = (gold.toLong() + income).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                            message = "Year advanced: city population growth and income collected."
                         }
-                        val income = cities.filter { it.owned }.sumOf { it.population.toLong() / 20L }
-                        gold = (gold.toLong() + income).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                        message = "Year advanced: city population growth and income collected."
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Advance Year") }

@@ -1,37 +1,41 @@
 package com.oldworldtrader.game
 
-/** Read-only city summary values derived from a city's current state. */
+/** Values shown on the owned-city dashboard, derived from the rules the game currently applies. */
 object CityDashboardRules {
-    fun annualIncome(city: CityData): Int = if (city.owned) (city.population.toLong() / 20L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt() else 0
+    fun annualGrowth(city: CityData): Int = EconomyLogic.populationGrowth(city)
 
-    fun annualExpense(city: CityData): Int {
+    /** The year-advance action collects income after applying that year's population growth. */
+    fun nextYearIncome(city: CityData): Int {
         if (!city.owned) return 0
-        val buildingUpkeep = city.buildings.entries.sumOf { (name, level) ->
-            val spec = EconomyLogic.buildingSpecs.firstOrNull { it.name == name }
-            val upkeepPerLevel = when (name) {
-                "Hospital" -> 12
-                "Police Station" -> 10
-                "Army Barracks" -> 18
-                "Power Plant" -> 25
-                else -> 4
-            }
-            level.toLong().coerceAtLeast(0L) * upkeepPerLevel.toLong()
+        val populationAfterGrowth = (city.population.toLong() + annualGrowth(city).toLong())
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+        return (populationAfterGrowth / 20L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    fun welfareLabel(city: CityData): String {
+        val hasHospital = (city.buildings["Hospital"] ?: 0) > 0
+        val hasPark = (city.buildings["Park"] ?: 0) > 0
+        return when {
+            hasHospital && hasPark -> "Excellent"
+            hasHospital || hasPark -> "Good"
+            else -> "Basic"
         }
-        val populationMaintenance = city.population.toLong() / 100L * 2L
-        return (buildingUpkeep + populationMaintenance).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-    }
-
-    fun annualNet(city: CityData): Int {
-        val net = annualIncome(city).toLong() - annualExpense(city).toLong()
-        return net.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
-    }
-
-    fun welfareLabel(city: CityData): String = when {
-        city.buildings["Hospital"] != null && city.buildings["Park"] != null -> "Excellent"
-        city.buildings["Hospital"] != null || city.buildings["Park"] != null -> "Good"
-        else -> "Basic"
     }
 
     fun electricityLabel(city: CityData): String =
-        if (CountrySystems.isElectricityUnlocked(city) && city.buildings["Power Plant"] != null) "Powered" else "Not available"
+        if (CountrySystems.isElectricityUnlocked(city) && (city.buildings["Power Plant"] ?: 0) > 0) {
+            "Powered"
+        } else {
+            "Not available"
+        }
+
+    fun upgradeBlockReason(city: CityData, spec: BuildingSpec, gold: Int): String? {
+        if (!city.owned) return "You must own this city before building here."
+        if (city.population < spec.unlockPopulation) return "Requires ${spec.unlockPopulation} people."
+        val level = (city.buildings[spec.name] ?: 0).coerceAtLeast(0)
+        if (level == Int.MAX_VALUE) return "Maximum level reached."
+        val cost = EconomyLogic.upgradeCost(spec, level)
+        if (gold < cost) return "Need $cost gold; you have $gold."
+        return null
+    }
 }

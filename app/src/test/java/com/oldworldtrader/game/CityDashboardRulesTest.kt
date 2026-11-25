@@ -1,0 +1,54 @@
+package com.oldworldtrader.game
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class CityDashboardRulesTest {
+    @Test
+    fun dashboardProjectsSamePopulationGrowthAndIncomeAsYearAdvance() {
+        val city = CityData("new", "New City", "Egypt", 300, 2500, 10, owned = true)
+
+        assertEquals(EconomyLogic.populationGrowth(city), CityDashboardRules.annualGrowth(city))
+        assertEquals(16, CityDashboardRules.nextYearIncome(city)) // 300 + 10 growth, then / 20
+    }
+
+    @Test
+    fun unownedCityHasNoProjectedGrowthOrIncome() {
+        val city = CityData("ven", "Venice", "Italy", 2400, 12000, 40)
+
+        assertEquals(0, CityDashboardRules.annualGrowth(city))
+        assertEquals(0, CityDashboardRules.nextYearIncome(city))
+        assertFalse(CityDashboardRules.upgradeBlockReason(city, EconomyLogic.buildingSpecs.first(), 12000) == null)
+    }
+
+    @Test
+    fun upgradeReasonReportsPopulationFundsAndLevelLimits() {
+        val house = EconomyLogic.buildingSpecs.first { it.name == "House" }
+        val city = CityData("alex", "Alexandria", "Egypt", 0, 6000, 20, owned = true)
+
+        assertEquals("Need 150 gold; you have 100.", CityDashboardRules.upgradeBlockReason(city, house, 100))
+        assertNull(CityDashboardRules.upgradeBlockReason(city, house, 150))
+
+        val maxed = city.copy(buildings = mutableMapOf("House" to Int.MAX_VALUE))
+        assertEquals("Maximum level reached.", CityDashboardRules.upgradeBlockReason(maxed, house, Int.MAX_VALUE))
+    }
+
+    @Test
+    fun dashboardSummariesReflectBuildingsAndOnlyTreatPositiveLevelsAsBuilt() {
+        val city = CityData(
+            "alex", "Alexandria", "Egypt", 1200, 6000, 20, owned = true,
+            buildings = mutableMapOf("Hospital" to 1, "Park" to 0)
+        )
+        assertEquals("Good", CityDashboardRules.welfareLabel(city))
+        assertEquals("Not available", CityDashboardRules.electricityLabel(city))
+
+        val powered = city.copy(
+            buildings = mutableMapOf("Hospital" to 1, "Park" to 1, "Power Plant" to 1),
+            unlocked = mutableSetOf("Market", "Electricity")
+        )
+        assertEquals("Excellent", CityDashboardRules.welfareLabel(powered))
+        assertEquals("Powered", CityDashboardRules.electricityLabel(powered))
+    }
+}
