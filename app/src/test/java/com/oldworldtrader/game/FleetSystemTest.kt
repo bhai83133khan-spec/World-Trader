@@ -61,7 +61,7 @@ class FleetSystemTest {
         val departure = FleetSystem.depart(fleet, route.id, 1_000)
         assertTrue(departure.success)
         assertEquals(550, departure.gold)
-        assertTrue(depart.state.isAtSea)
+        assertTrue(departure.state.isAtSea)
         assertEquals(3, departure.state.voyage?.remainingDays)
         assertEquals("alex", departure.state.currentPortId)
     }
