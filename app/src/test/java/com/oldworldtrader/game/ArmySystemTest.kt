@@ -68,6 +68,50 @@ class ArmySystemTest {
     }
 
     @Test
+    fun playerSiegeReportSeparatesTroopLossesFromFortificationDamage() {
+        val target = city(20)
+        val battle = ArmySystem.attack(60, target)
+        val report = ArmySystem.playerSiegeReport("Ottoman Empire", target, 60, battle)!!
+
+        assertTrue(report.victory)
+        assertTrue(report.isSiege)
+        assertEquals("Ottoman Empire", report.attacker)
+        assertEquals("Italy", report.defender)
+        assertEquals(60, report.attackerStrength)
+        assertEquals(4, report.attackerCasualties)
+        assertEquals(56, report.attackerSurvivors)
+        assertEquals(20, report.defenderStrength)
+        assertEquals(5, report.defenderCasualties)
+        assertEquals(15, report.defenderSurvivors)
+        assertEquals(EnemyKingdomSystem.PLAYER_ID, report.capturedCity!!.controlledBy)
+    }
+
+    @Test
+    fun failedPlayerSiegeReportShowsNoFortificationDamage() {
+        val target = city(20)
+        val battle = ArmySystem.attack(30, target)
+        val report = ArmySystem.playerSiegeReport("Ottoman Empire", target, 30, battle)!!
+
+        assertFalse(report.victory)
+        assertTrue(report.isSiege)
+        assertEquals(7, report.attackerCasualties)
+        assertEquals(23, report.attackerSurvivors)
+        assertEquals(20, report.defenderStrength)
+        assertEquals(0, report.defenderCasualties)
+        assertEquals(20, report.defenderSurvivors)
+        assertNull(report.capturedCity)
+    }
+
+
+    @Test
+    fun invalidPlayerAttackDoesNotCreateBattleReport() {
+        val target = city(20)
+        val battle = ArmySystem.attack(9, target)
+        assertNull(ArmySystem.playerSiegeReport("Ottoman Empire", target, 9, battle))
+    }
+
+
+    @Test
     fun successfulSiegeDamagesDefensiveBuildingsButPreservesNonDefensiveBuildings() {
         val target = city(
             30,

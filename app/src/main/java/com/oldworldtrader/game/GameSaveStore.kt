@@ -131,7 +131,8 @@ object GameSaveStore {
                     capturedCity = report.optString("capturedCityId").takeIf { it.isNotBlank() }
                         ?.let { id -> cities.firstOrNull { it.id == id } },
                     victory = report.optBoolean("victory", false),
-                    summary = report.optString("summary")
+                    summary = report.optString("summary"),
+                    isSiege = report.optBoolean("isSiege", false)
                 )
             }
             SavedGameState(
@@ -236,7 +237,8 @@ object GameSaveStore {
                 .put("defenderSurvivors", report.defenderSurvivors.coerceAtLeast(0))
                 .put("loot", report.loot.coerceAtLeast(0))
                 .put("capturedCityId", report.capturedCity?.id)
-                .put("victory", report.victory).put("summary", report.summary))
+                .put("victory", report.victory).put("summary", report.summary)
+                .put("isSiege", report.isSiege))
         }
         root.put("battleReports", reportArray)
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

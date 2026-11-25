@@ -372,9 +372,13 @@ private fun OldWorldTraderApp() {
                                 onClick = {
                                     val battle = ArmySystem.attack(army, target)
                                     if (battle.valid) {
+                                        val armyBefore = army
                                         army = battle.remainingArmy
                                         battle.capturedCity?.let { captured ->
                                             cities = cities.map { if (it.id == target.id) captured else it }
+                                        }
+                                        ArmySystem.playerSiegeReport(selectedCountry, target, armyBefore, battle)?.let { report ->
+                                            battleReports = (battleReports + report).takeLast(30)
                                         }
                                     }
                                     message = battle.message

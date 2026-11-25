@@ -89,6 +89,38 @@ object ArmySystem {
             "Victory at " + target.name + "! Lost " + casualties + " soldiers; " + survivors + " remain. City captured with defense reduced.")
     }
 
+    /**
+     * Convert a valid player city attack into a report. Defender losses represent
+     * fortification points damaged, not actual garrison troops; the report UI labels them accordingly.
+     */
+    fun playerSiegeReport(
+        attacker: String,
+        target: CityData,
+        armyBefore: Int,
+        battle: ArmyBattleResult
+    ): BattleReport? {
+        if (!battle.valid) return null
+        val initialDefense = cityDefense(target)
+        val remainingDefense = battle.capturedCity?.let(::cityDefense) ?: initialDefense
+        val defenseDamage = (initialDefense - remainingDefense).coerceAtLeast(0)
+        val defender = target.controlledBy?.takeIf { it != EnemyKingdomSystem.PLAYER_ID } ?: target.country
+        return BattleReport(
+            attacker = attacker,
+            defender = defender,
+            attackerStrength = armyBefore.coerceAtLeast(0),
+            defenderStrength = initialDefense,
+            attackerCasualties = battle.casualties.coerceAtLeast(0),
+            defenderCasualties = defenseDamage,
+            attackerSurvivors = battle.remainingArmy.coerceAtLeast(0),
+            defenderSurvivors = remainingDefense,
+            loot = 0,
+            capturedCity = battle.capturedCity,
+            victory = battle.victory,
+            summary = "${battle.message} Defense damage: $defenseDamage points.",
+            isSiege = true
+        )
+    }
+
     /** One gold per soldier per year. */
     fun annualUpkeep(army: Int): Int = army.coerceAtLeast(0)
 

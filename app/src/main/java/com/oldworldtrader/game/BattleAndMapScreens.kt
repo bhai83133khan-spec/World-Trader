@@ -60,14 +60,16 @@ private fun BattleReportCard(report: BattleReport, battleNumber: Int, onSelectCi
         Column(Modifier.background(Brush.verticalGradient(listOf(Parchment, Color(0xFFE7D2A9))))
             .padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("BATTLE • ${battleNumber.toString().padStart(2, '0')}", color = Ink, fontWeight = FontWeight.Bold)
+                Text("${if (report.isSiege) "SIEGE" else "BATTLE"} • ${battleNumber.toString().padStart(2, '0')}", color = Ink, fontWeight = FontWeight.Bold)
                 Text(if (report.victory) "VICTORY" else "DEFEAT", color = resultColor, fontWeight = FontWeight.Black)
             }
             Text("${report.attacker}  ⚔  ${report.defender}", style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold, color = Ink)
             BattleStrengthBar("ATTACK", report.attackerStrength, report.attackerCasualties, report.attackerSurvivors, resultColor)
             BattleStrengthBar("DEFENSE", report.defenderStrength, report.defenderCasualties,
-                report.defenderSurvivors, Color(0xFF496783))
+                report.defenderSurvivors, Color(0xFF496783),
+                lossesLabel = if (report.isSiege) "Defense damage" else "Casualties",
+                survivorsLabel = if (report.isSiege) "Remaining defense" else "Survivors")
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Spoils: ${report.loot} gold", fontWeight = FontWeight.Bold, color = Color(0xFF76500D))
                 report.capturedCity?.let { captured ->
@@ -81,7 +83,10 @@ private fun BattleReportCard(report: BattleReport, battleNumber: Int, onSelectCi
 }
 
 @Composable
-private fun BattleStrengthBar(label: String, strength: Int, losses: Int, survivors: Int, color: Color) {
+private fun BattleStrengthBar(
+    label: String, strength: Int, losses: Int, survivors: Int, color: Color,
+    lossesLabel: String = "Casualties", survivorsLabel: String = "Survivors"
+) {
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = Ink, fontWeight = FontWeight.Bold)
@@ -92,7 +97,7 @@ private fun BattleStrengthBar(label: String, strength: Int, losses: Int, survivo
                 (survivors.toFloat() / strength.toFloat()).coerceIn(0f, 1f))
                 .height(9.dp).background(color, RoundedCornerShape(8.dp)))
         }
-        Text("Casualties $losses  •  Survivors $survivors", color = Ink,
+        Text("$lossesLabel $losses  •  $survivorsLabel $survivors", color = Ink,
             style = MaterialTheme.typography.labelMedium)
     }
 }

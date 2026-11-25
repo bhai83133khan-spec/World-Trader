@@ -25,7 +25,9 @@ data class BattleReport(
     val loot: Int,
     val capturedCity: CityData?,
     val victory: Boolean,
-    val summary: String
+    val summary: String,
+    /** Player attacks use city fortification points as defense, not a troop garrison. */
+    val isSiege: Boolean = false
 )
 
 data class BattleResolution(
