@@ -31,8 +31,8 @@ private fun OldWorldTraderApp() {
     var year by remember { mutableIntStateOf(savedGame?.year ?: 1) }
     var tab by remember { mutableIntStateOf(0) }
     var selectedCityId by remember { mutableStateOf<String?>(null) }
-    var marketCityId by remember { mutableStateOf("alex") }
-    var marketCityMenuExpanded by remember { mutableStateOf(false) }
+    var fleetState by remember { mutableStateOf(savedGame?.fleetState ?: FleetState()) }
+    var marketCityId by remember { mutableStateOf(savedGame?.fleetState?.currentPortId ?: "alex") }
     var marketState by remember { mutableStateOf(savedGame?.marketState ?: MarketState()) }
     var shopState by remember { mutableStateOf(savedGame?.shopState ?: ShopState()) }
     var shopCityId by remember { mutableStateOf(savedGame?.cities?.firstOrNull()?.id ?: "alex") }
@@ -48,14 +48,14 @@ private fun OldWorldTraderApp() {
         CityData("del", "Delhi", "India", 1800, 8000, 25),
         CityData("bag", "Baghdad", "Iraq", 2000, 9000, 30)
     )) }
-    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState) {
-        GameSaveStore.save(context, SavedGameState(gold, year, army, selectedCountry, cities, marketState, shopState))
+    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState) {
+        GameSaveStore.save(context, SavedGameState(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState))
     }
 
     val current = cities.firstOrNull { it.id == selectedCityId }
     val marketCity = cities.firstOrNull { it.id == marketCityId } ?: cities.first()
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
-    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army")
+    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet")
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF285743))) {
         Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))) {
@@ -152,100 +152,103 @@ private fun OldWorldTraderApp() {
                     }
                     3 -> {
                         Text("MARKET • ${marketCity.name}", fontWeight = FontWeight.Bold)
-                        OutlinedButton(onClick = { marketCityMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Trading port: ${marketCity.name} ▼")
-                        }
-                        DropdownMenu(
-                            expanded = marketCityMenuExpanded,
-                            onDismissRequest = { marketCityMenuExpanded = false }
-                        ) {
-                            cities.forEach { city ->
-                                DropdownMenuItem(
-                                    text = { Text("${city.name} • ${city.country}") },
-                                    onClick = {
-                                        marketCityId = city.id
-                                        marketCityMenuExpanded = false
-                                        message = "Market opened in ${city.name}."
+                        Text("Trading port: ${marketCity.name}")
+                        Text("Cargo capacity: ${FleetSystem.cargoUsed(marketState.cargo)} / ${FleetSystem.selectedCapacity(fleetState)}")
+                        if (fleetState.isAtSea) {
+                            Text("Trading is locked while your ship is sailing.")
+                            Button(
+                                onClick = {
+                                    val action = FleetSystem.advanceVoyageDay(fleetState, gold)
+                                    if (action.success) {
+                                        fleetState = action.state
+                                        if (!action.state.isAtSea) marketCityId = action.state.currentPortId
                                     }
-                                )
+                                    message = action.message
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Advance voyage day • ${fleetState.voyage?.remainingDays ?: 0} left") }
+                        } else {
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                Button(onClick = { quantity = (quantity - 1).coerceAtLeast(1) }) { Text("−") }
+                                Text("Quantity $quantity", Modifier.padding(10.dp))
+                                Button(onClick = { quantity = (quantity + 1).coerceAtMost(99) }) { Text("+") }
                             }
-                        }
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            Button(onClick = { quantity = (quantity - 1).coerceAtLeast(1) }) { Text("−") }
-                            Text("Quantity $quantity", Modifier.padding(10.dp))
-                            Button(onClick = { quantity = (quantity + 1).coerceAtMost(99) }) { Text("+") }
-                        }
-                        Text("YOUR CARGO", fontWeight = FontWeight.Bold)
-                        Text(EconomyLogic.goods.joinToString("  •  ") { good ->
-                            "${good.name}: ${marketState.cargoAmount(good.name)}"
-                        })
-                        EconomyLogic.goods.forEach { good ->
-                            val stock = marketState.stock(marketCity.id, good.name)
-                            val factors = MarketSystem.factorsFor(good, marketCityIndex, year)
-                            val previousFactors = MarketSystem.factorsFor(
-                                good, marketCityIndex, (year - 1).coerceAtLeast(1)
-                            )
-                            val quote = MarketSystem.quote(
-                                good = good,
-                                cityIndex = marketCityIndex,
-                                year = year,
-                                stock = stock,
-                                citySupplyFactor = factors.supplyFactor,
-                                demandFactor = factors.demandFactor,
-                                previousCitySupplyFactor = previousFactors.supplyFactor,
-                                previousDemandFactor = previousFactors.demandFactor,
-                                eventLabel = factors.label
-                            )
-                            val held = marketState.cargoAmount(good.name)
-                            val saleValue = quote.price.toLong() * quantity.toLong()
-                            val canSellSafely = MarketSystem.canSell(held, quantity) &&
-                                saleValue <= Int.MAX_VALUE.toLong() &&
-                                gold.toLong() + saleValue <= Int.MAX_VALUE.toLong()
-                            Card(Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(good.name, fontWeight = FontWeight.Bold)
-                                    Text("Price: ${quote.price} gold • ${quote.trendLabel} (${quote.trendPercent}%)")
-                                    Text("Event: ${quote.eventLabel}")
-                                    Text(
-                                        MarketSystem.trendRiskLabel(quote.trendRisk),
-                                        color = when (quote.trendRisk) {
-                                            "High" -> Color(0xFFB3261E)
-                                            "Moderate" -> Color(0xFF9A6700)
-                                            else -> Color(0xFF1B5E20)
-                                        },
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text("Port stock: ${quote.availableStock} • In cargo: $held")
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Button(
-                                            enabled = MarketSystem.canBuy(quote, quantity, gold),
-                                            onClick = {
-                                                val transaction = marketState.buy(marketCity.id, good, quote, quantity, gold)
-                                                if (transaction.success) {
-                                                    marketState = transaction.state
-                                                    gold = transaction.gold
-                                                    message = transaction.message
-                                                } else message = transaction.message
+                            Text("YOUR CARGO", fontWeight = FontWeight.Bold)
+                            Text(EconomyLogic.goods.joinToString("  •  ") { good ->
+                                "${good.name}: ${marketState.cargoAmount(good.name)}"
+                            })
+                            EconomyLogic.goods.forEach { good ->
+                                val stock = marketState.stock(marketCity.id, good.name)
+                                val factors = MarketSystem.factorsFor(good, marketCityIndex, year)
+                                val previousFactors = MarketSystem.factorsFor(
+                                    good, marketCityIndex, (year - 1).coerceAtLeast(1)
+                                )
+                                val quote = MarketSystem.quote(
+                                    good = good,
+                                    cityIndex = marketCityIndex,
+                                    year = year,
+                                    stock = stock,
+                                    citySupplyFactor = factors.supplyFactor,
+                                    demandFactor = factors.demandFactor,
+                                    previousCitySupplyFactor = previousFactors.supplyFactor,
+                                    previousDemandFactor = previousFactors.demandFactor,
+                                    eventLabel = factors.label
+                                )
+                                val held = marketState.cargoAmount(good.name)
+                                val saleValue = quote.price.toLong() * quantity.toLong()
+                                val capacity = FleetSystem.selectedCapacity(fleetState)
+                                val cargoFits = FleetSystem.canFitCargo(marketState.cargo, good.name, quantity, capacity)
+                                val canSellSafely = MarketSystem.canSell(held, quantity) &&
+                                    saleValue <= Int.MAX_VALUE.toLong() &&
+                                    gold.toLong() + saleValue <= Int.MAX_VALUE.toLong()
+                                Card(Modifier.fillMaxWidth()) {
+                                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(good.name, fontWeight = FontWeight.Bold)
+                                        Text("Price: ${quote.price} gold • ${quote.trendLabel} (${quote.trendPercent}%)")
+                                        Text("Event: ${quote.eventLabel}")
+                                        Text(
+                                            MarketSystem.trendRiskLabel(quote.trendRisk),
+                                            color = when (quote.trendRisk) {
+                                                "High" -> Color(0xFFB3261E)
+                                                "Moderate" -> Color(0xFF9A6700)
+                                                else -> Color(0xFF1B5E20)
                                             },
-                                            modifier = Modifier.weight(1f)
-                                        ) { Text("Buy") }
-                                        OutlinedButton(
-                                            enabled = canSellSafely,
-                                            onClick = {
-                                                val transaction = marketState.sell(marketCity.id, good, quote, quantity, gold)
-                                                if (transaction.success) {
-                                                    marketState = transaction.state
-                                                    gold = transaction.gold
-                                                    message = transaction.message
-                                                } else message = transaction.message
-                                            },
-                                            modifier = Modifier.weight(1f)
-                                        ) { Text("Sell") }
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text("Port stock: ${quote.availableStock} • In cargo: $held")
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Button(
+                                                enabled = MarketSystem.canBuy(quote, quantity, gold) && cargoFits,
+                                                onClick = {
+                                                    val transaction = marketState.buy(
+                                                        marketCity.id, good, quote, quantity, gold, cargoCapacity = capacity
+                                                    )
+                                                    if (transaction.success) {
+                                                        marketState = transaction.state
+                                                        gold = transaction.gold
+                                                        message = transaction.message
+                                                    } else message = transaction.message
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) { Text("Buy") }
+                                            OutlinedButton(
+                                                enabled = canSellSafely,
+                                                onClick = {
+                                                    val transaction = marketState.sell(marketCity.id, good, quote, quantity, gold)
+                                                    if (transaction.success) {
+                                                        marketState = transaction.state
+                                                        gold = transaction.gold
+                                                        message = transaction.message
+                                                    } else message = transaction.message
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) { Text("Sell") }
+                                        }
                                     }
                                 }
                             }
                         }
-                        Text("Prices now reflect port, year, stock, and deterministic supply/demand events. Cargo and port stock are tracked separately.")
+                        Text("Prices reflect port, year, stock and deterministic supply/demand events. Trading is only available at your current port.")
                     }
                     4 -> {
                         ShopDashboard(
@@ -311,6 +314,43 @@ private fun OldWorldTraderApp() {
                                 modifier = Modifier.fillMaxWidth()
                             ) { Text("Conquer ${target.name} • requires ${target.defense}") }
                         }
+                    }
+                    6 -> {
+                        FleetDashboard(
+                            cities = cities,
+                            fleetState = fleetState,
+                            gold = gold,
+                            cargo = marketState.cargo,
+                            onPurchase = { shipId ->
+                                val action = FleetSystem.purchase(fleetState, shipId, gold)
+                                if (action.success) {
+                                    fleetState = action.state
+                                    gold = action.gold
+                                }
+                                message = action.message
+                            },
+                            onSelectShip = { shipId ->
+                                val action = FleetSystem.selectShip(fleetState, shipId, gold)
+                                if (action.success) fleetState = action.state
+                                message = action.message
+                            },
+                            onDepart = { routeId ->
+                                val action = FleetSystem.depart(fleetState, routeId, gold)
+                                if (action.success) {
+                                    fleetState = action.state
+                                    gold = action.gold
+                                }
+                                message = action.message
+                            },
+                            onAdvanceDay = {
+                                val action = FleetSystem.advanceVoyageDay(fleetState, gold)
+                                if (action.success) {
+                                    fleetState = action.state
+                                    if (!action.state.isAtSea) marketCityId = action.state.currentPortId
+                                }
+                                message = action.message
+                            }
+                        )
                     }
                 }
                 Button(
