@@ -74,6 +74,7 @@ class FleetSystemTest {
         val atSea = FleetSystem.depart(FleetState(), route.id, 10_000).state
         assertFalse(FleetSystem.depart(atSea, route.id, 10_000).success)
         assertFalse(FleetSystem.purchase(atSea, "cog", 10_000).success)
+        assertFalse(FleetSystem.selectShip(atSea, "cog", 10_000).success)
     }
 
     @Test
@@ -102,5 +103,8 @@ class FleetSystemTest {
         assertFalse(invalid.isAtSea)
         val corruptedProgress = FleetState(voyage = Voyage("alex-ven", "ven", 0))
         assertFalse(FleetSystem.advanceVoyageDay(corruptedProgress, 500).success)
+        val legacySave = FleetSystem.restore(null, null, null, null)
+        assertEquals(setOf("skiff"), legacySave.ownedShipIds)
+        assertEquals("alex", legacySave.currentPortId)
     }
 }
