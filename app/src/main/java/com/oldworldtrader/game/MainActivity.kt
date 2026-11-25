@@ -144,6 +144,7 @@ private fun OldWorldTraderApp() {
                                 otherOwnedCities = WorldTurnSystem.migrateOwnership(cities).filter {
                                     it.id != current.id && CityGarrisonSystem.isPlayerControlled(it)
                                 },
+                                otherCityGarrisons = cityGarrisons,
                                 garrisonActionsEnabled = !fleetState.isAtSea,
                                 onStation = { amount ->
                                     val result = CityGarrisonSystem.station(army, cityGarrisons[current.id] ?: 0, amount, current)
