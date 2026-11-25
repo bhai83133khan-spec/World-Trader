@@ -232,7 +232,7 @@ object GameSaveStore {
         root.put("battleReports", reportArray)
         val contractState = state.merchantContractState.forYear(state.year)
         val completedContractIds = JSONArray()
-        contractState.completedContractIds.sorted().forEach { completedContractIds.put(it) }
+        contractState.completedContractIds.forEach { completedContractIds.put(it) }
         root.put("merchantContracts", JSONObject().put("year", contractState.year).put("completedIds", completedContractIds))
 
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_SNAPSHOT, root.toString()).apply()

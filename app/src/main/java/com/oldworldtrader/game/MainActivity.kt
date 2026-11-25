@@ -44,6 +44,7 @@ private fun OldWorldTraderApp() {
     var army by remember { mutableIntStateOf(savedGame?.army ?: 0) }
     var cityGarrisons by remember { mutableStateOf(savedGame?.cityGarrisons ?: emptyMap()) }
     var researchState by remember { mutableStateOf(savedGame?.researchState ?: ResearchState()) }
+    var merchantContractState by remember { mutableStateOf(savedGame?.merchantContractState ?: MerchantContractState()) }
     var message by remember { mutableStateOf("Build your city, grow population, unlock new technologies.") }
     var cityName by remember { mutableStateOf("") }
     var cities by remember { mutableStateOf(savedGame?.cities ?: listOf(
@@ -56,7 +57,7 @@ private fun OldWorldTraderApp() {
     var travelCountry by remember { mutableStateOf(cities.firstOrNull()?.country ?: selectedCountry) }
     var enemyKingdomState by remember { mutableStateOf(savedGame?.enemyKingdomState ?: EnemyKingdomState()) }
     var battleReports by remember { mutableStateOf(savedGame?.battleReports ?: emptyList()) }
-    LaunchedEffect(gold, year, army, cityGarrisons, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports) {
+    LaunchedEffect(gold, year, army, cityGarrisons, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports, merchantContractState) {
         GameSaveStore.save(
             context,
             SavedGameState(
@@ -72,7 +73,8 @@ private fun OldWorldTraderApp() {
                 marketCityId = marketCityId,
                 enemyKingdomState = enemyKingdomState,
                 battleReports = battleReports,
-                cityGarrisons = cityGarrisons
+                cityGarrisons = cityGarrisons,
+                merchantContractState = merchantContractState
             )
         )
     }
@@ -83,7 +85,7 @@ private fun OldWorldTraderApp() {
     val kingdomSnapshot = KingdomProgression.evaluate(cities)
     val militarySummary = ArmySystem.kingdomMilitarySummary(army, cities, cityGarrisons)
     val cityFoundingCost = KingdomProgression.foundingCost(cities)
-    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research", "War Reports")
+    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research", "War Reports", "Contracts")
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF285743))) {
         Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))) {
@@ -464,6 +466,26 @@ private fun OldWorldTraderApp() {
                         selectedCityId = cityId
                         tab = 0
                     })
+                    10 -> MerchantContractDashboard(
+                        portId = fleetState.currentPortId,
+                        portName = cities.firstOrNull { it.id == fleetState.currentPortId }?.name ?: fleetState.currentPortId,
+                        year = year,
+                        state = merchantContractState,
+                        cargo = marketState.cargo,
+                        gold = gold,
+                        actionsEnabled = !fleetState.isAtSea,
+                        onComplete = { contract ->
+                            val result = MerchantContractSystem.complete(
+                                contract, fleetState.currentPortId, year, gold, marketState.cargo, merchantContractState
+                            )
+                            if (result.success) {
+                                gold = result.gold
+                                marketState = marketState.copy(cargo = result.cargo)
+                                merchantContractState = result.state
+                            }
+                            message = result.message
+                        }
+                    )
                 }
                 Button(onClick = {
                     if (year == Int.MAX_VALUE) {
