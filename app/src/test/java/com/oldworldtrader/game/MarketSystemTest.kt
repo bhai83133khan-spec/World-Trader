@@ -129,6 +129,42 @@ class MarketSystemTest {
         assertEquals(clampedLow.price, low.price)
         assertEquals(clampedHigh.price, high.price)
     }
+
+    @Test
+    fun fivePortMarketProfilesDifferAcrossMultipleGoodsAndRemainStable() {
+        fun portProfile(cityIndex: Int): List<Int> = EconomyLogic.goods.map { good ->
+            val current = MarketSystem.factorsFor(good, cityIndex, year = 1)
+            val previous = MarketSystem.factorsFor(good, cityIndex, year = 1)
+            MarketSystem.quote(
+                good = good,
+                cityIndex = cityIndex,
+                year = 1,
+                stock = 120,
+                citySupplyFactor = current.supplyFactor,
+                demandFactor = current.demandFactor,
+                previousCitySupplyFactor = previous.supplyFactor,
+                previousDemandFactor = previous.demandFactor,
+                eventLabel = current.label
+            ).price
+        }
+
+        val profiles = (0 until 5).map(::portProfile)
+        assertEquals("Each of the five original ports should have a distinct price profile",
+            5, profiles.toSet().size)
+        for (firstPort in 0 until profiles.size) {
+            for (secondPort in firstPort + 1 until profiles.size) {
+                val goodsWithDifferentPrices = profiles[firstPort].zip(profiles[secondPort])
+                    .count { (first, second) -> first != second }
+                assertTrue(
+                    "Ports $firstPort and $secondPort should differ for at least three goods",
+                    goodsWithDifferentPrices >= 3
+                )
+            }
+        }
+        assertEquals("Port price profiles must be deterministic",
+            profiles, (0 until 5).map(::portProfile))
+    }
+
     @Test
     fun seasonalMarketEventsAreDeterministicAndBounded() {
         val wheat = TradeGood("Wheat", 30)
