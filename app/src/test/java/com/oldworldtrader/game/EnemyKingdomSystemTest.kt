@@ -54,6 +54,23 @@ class EnemyKingdomSystemTest {
     }
 
     @Test
+    fun conqueredCitiesSeedAndGrowRivalKingdoms() {
+        val captured = CityData("captured", "Captured", "Playerland", 5_000, 10_000, 10,
+            owned = false, controlledBy = "North")
+        val native = city("north", "North", population = 1_000)
+        val holdings = listOf(captured, native)
+
+        val initial = EnemyKingdomSystem.initialize(holdings, "Playerland")
+        assertEquals(setOf("North"), initial.kingdoms.keys)
+        assertEquals(40, initial.kingdoms.getValue("North").army)
+        assertEquals(2_750, initial.kingdoms.getValue("North").treasury)
+
+        val result = EnemyKingdomSystem.advanceYear(initial, holdings, 1, "Playerland")
+        assertEquals(52, result.state.kingdoms.getValue("North").army) // +12 from 6,000 controlled people
+        assertEquals(2_950, result.state.kingdoms.getValue("North").treasury) // +200 annual income
+    }
+
+    @Test
     fun duplicateYearIsIdempotent() {
         val cities = listOf(city("home", "Playerland", true, controlledBy = "player"), city("enemy", "Rival"))
         val initial = EnemyKingdomSystem.initialize(cities, "Playerland")
