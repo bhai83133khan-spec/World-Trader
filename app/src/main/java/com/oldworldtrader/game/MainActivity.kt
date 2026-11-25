@@ -52,6 +52,8 @@ private fun OldWorldTraderApp() {
         CityData("del", "Delhi", "India", 1800, 8000, 25),
         CityData("bag", "Baghdad", "Iraq", 2000, 9000, 30)
     )) }
+    // Browsing a country is location state, not a change to the player's kingdom identity.
+    var travelCountry by remember { mutableStateOf(cities.firstOrNull()?.country ?: selectedCountry) }
     var enemyKingdomState by remember { mutableStateOf(savedGame?.enemyKingdomState ?: EnemyKingdomState()) }
     var battleReports by remember { mutableStateOf(savedGame?.battleReports ?: emptyList()) }
     LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports) {
@@ -183,13 +185,42 @@ private fun OldWorldTraderApp() {
                     }
                     2 -> {
                         Text("COUNTRY TRAVEL", fontWeight = FontWeight.Bold)
-                        listOf("Egypt", "Italy", "Oman", "India", "Iraq", "Ottoman Empire", "Persia").forEach { country ->
+                        val countries = CountryTravelSystem.knownCountries(
+                            cities, listOf("Egypt", "Italy", "Oman", "India", "Iraq", "Ottoman Empire", "Persia")
+                        )
+                        countries.forEach { country ->
                             Button(onClick = {
-                                selectedCountry = country
-                                message = "Travelled to $country"
-                            }, modifier = Modifier.fillMaxWidth()) { Text("Travel to $country") }
+                                travelCountry = country
+                                message = "Browsing $country. Select a city to enter."
+                            }, modifier = Modifier.fillMaxWidth()) {
+                                Text(if (travelCountry.equals(country, ignoreCase = true)) "Selected • $country" else "Browse $country")
+                            }
                         }
-                        Text("Current country: $selectedCountry")
+                        Text("Selected country: $travelCountry")
+                        val destinations = CountryTravelSystem.citiesInCountry(cities, travelCountry)
+                        if (destinations.isEmpty()) {
+                            Text("No known cities in $travelCountry yet.")
+                        } else {
+                            Text("CITIES • $travelCountry", fontWeight = FontWeight.Bold)
+                            destinations.forEach { destination ->
+                                val visit = CityTravelSystem.visit(destination, fleetState.isAtSea)
+                                Button(
+                                    enabled = visit.success,
+                                    onClick = {
+                                        val action = CityTravelSystem.visit(destination, fleetState.isAtSea)
+                                        if (action.success) {
+                                            action.cityId?.let { cityId ->
+                                                selectedCityId = cityId
+                                                marketCityId = cityId
+                                                tab = 0
+                                            }
+                                        }
+                                        message = action.message
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) { Text("Enter " + destination.name + " • " + destination.country) }
+                            }
+                        }
                     }
                     3 -> {
                         Text("MARKET • ${marketCity.name}", fontWeight = FontWeight.Bold)
