@@ -10,7 +10,8 @@ data class SavedGameState(
     val army: Int,
     val selectedCountry: String,
     val cities: List<CityData>,
-    val marketState: MarketState
+    val marketState: MarketState,
+    val shopState: ShopState = ShopState()
 )
 
 /** Lightweight, offline save snapshot stored in app-private preferences. */
@@ -58,13 +59,31 @@ object GameSaveStore {
             val cargo = mutableMapOf<String, Int>()
             cargoJson.keys().forEach { good -> cargo[good] = cargoJson.optInt(good, 0).coerceAtLeast(0) }
 
+            val shopsJson = root.optJSONObject("shops") ?: JSONObject()
+            val shops = mutableMapOf<String, CityShop>()
+            shopsJson.keys().forEach { cityId ->
+                val shopJson = shopsJson.optJSONObject(cityId) ?: return@forEach
+                val inventoryJson = shopJson.optJSONObject("inventory") ?: JSONObject()
+                val inventory = mutableMapOf<String, Int>()
+                inventoryJson.keys().forEach { good ->
+                    inventory[good] = inventoryJson.optInt(good, 0).coerceAtLeast(0)
+                }
+                shops[cityId] = CityShop(
+                    inventory = inventory,
+                    cash = shopJson.optInt("cash", 0).coerceAtLeast(0),
+                    lifetimeRevenue = shopJson.optInt("lifetimeRevenue", 0).coerceAtLeast(0),
+                    itemsSold = shopJson.optInt("itemsSold", 0).coerceAtLeast(0)
+                )
+            }
+
             SavedGameState(
                 gold = root.optInt("gold", 12000).coerceAtLeast(0),
                 year = root.optInt("year", 1).coerceAtLeast(1),
                 army = root.optInt("army", 0).coerceAtLeast(0),
                 selectedCountry = root.optString("selectedCountry", "Ottoman Empire").ifBlank { "Ottoman Empire" },
                 cities = cities,
-                marketState = MarketState(cityStocks = stocks, cargo = cargo)
+                marketState = MarketState(cityStocks = stocks, cargo = cargo),
+                shopState = ShopState(shops = shops)
             )
         } catch (_: Exception) {
             null
@@ -107,6 +126,20 @@ object GameSaveStore {
         val cargoJson = JSONObject()
         state.marketState.cargo.forEach { (good, quantity) -> cargoJson.put(good, quantity.coerceAtLeast(0)) }
         root.put("cityStocks", stockJson).put("cargo", cargoJson)
+        val shopsJson = JSONObject()
+        state.shopState.shops.forEach { (cityId, shop) ->
+            val inventoryJson = JSONObject()
+            shop.inventory.forEach { (good, quantity) -> inventoryJson.put(good, quantity.coerceAtLeast(0)) }
+            shopsJson.put(
+                cityId,
+                JSONObject()
+                    .put("inventory", inventoryJson)
+                    .put("cash", shop.cash.coerceAtLeast(0))
+                    .put("lifetimeRevenue", shop.lifetimeRevenue.coerceAtLeast(0))
+                    .put("itemsSold", shop.itemsSold.coerceAtLeast(0))
+            )
+        }
+        root.put("shops", shopsJson)
 
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(KEY_SNAPSHOT, root.toString()).apply()

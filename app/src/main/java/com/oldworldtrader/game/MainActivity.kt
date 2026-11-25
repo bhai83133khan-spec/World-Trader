@@ -34,6 +34,8 @@ private fun OldWorldTraderApp() {
     var marketCityId by remember { mutableStateOf("alex") }
     var marketCityMenuExpanded by remember { mutableStateOf(false) }
     var marketState by remember { mutableStateOf(savedGame?.marketState ?: MarketState()) }
+    var shopState by remember { mutableStateOf(savedGame?.shopState ?: ShopState()) }
+    var shopCityId by remember { mutableStateOf(savedGame?.cities?.firstOrNull()?.id ?: "alex") }
     var selectedCountry by remember { mutableStateOf(savedGame?.selectedCountry ?: "Ottoman Empire") }
     var quantity by remember { mutableIntStateOf(1) }
     var army by remember { mutableIntStateOf(savedGame?.army ?: 0) }
@@ -46,14 +48,14 @@ private fun OldWorldTraderApp() {
         CityData("del", "Delhi", "India", 1800, 8000, 25),
         CityData("bag", "Baghdad", "Iraq", 2000, 9000, 30)
     )) }
-    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState) {
-        GameSaveStore.save(context, SavedGameState(gold, year, army, selectedCountry, cities, marketState))
+    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState) {
+        GameSaveStore.save(context, SavedGameState(gold, year, army, selectedCountry, cities, marketState, shopState))
     }
 
     val current = cities.firstOrNull { it.id == selectedCityId }
     val marketCity = cities.firstOrNull { it.id == marketCityId } ?: cities.first()
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
-    val tabs = listOf("My City", "City Travel", "Country", "Market", "Army")
+    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army")
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF285743))) {
         Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))) {
@@ -246,6 +248,46 @@ private fun OldWorldTraderApp() {
                         Text("Prices now reflect port, year, stock, and deterministic supply/demand events. Cargo and port stock are tracked separately.")
                     }
                     4 -> {
+                        ShopDashboard(
+                            cities = cities,
+                            selectedCityId = shopCityId,
+                            gold = gold,
+                            year = year,
+                            shopState = shopState,
+                            marketState = marketState,
+                            onCitySelected = { shopCityId = it },
+                            onOpenShop = { cityId, cityOwned ->
+                                val transaction = shopState.openShop(cityId, cityOwned, gold, marketState.cargo)
+                                if (transaction.success) {
+                                    shopState = transaction.state
+                                    gold = transaction.gold
+                                }
+                                message = transaction.message
+                            },
+                            onStock = { cityId, goodName, amount ->
+                                val transaction = shopState.stockFromCargo(cityId, goodName, amount, marketState.cargo, gold)
+                                if (transaction.success) {
+                                    shopState = transaction.state
+                                    marketState = marketState.copy(cargo = transaction.cargo)
+                                }
+                                message = transaction.message
+                            },
+                            onCustomerSale = { cityId, goodName, amount, retailPrice ->
+                                val transaction = shopState.sellToCustomers(cityId, goodName, amount, retailPrice, gold, marketState.cargo)
+                                if (transaction.success) shopState = transaction.state
+                                message = transaction.message
+                            },
+                            onCollectCash = { cityId ->
+                                val transaction = shopState.collectCash(cityId, gold, marketState.cargo)
+                                if (transaction.success) {
+                                    shopState = transaction.state
+                                    gold = transaction.gold
+                                }
+                                message = transaction.message
+                            }
+                        )
+                    }
+                    5 -> {
                         Text("ARMY RECRUITMENT", fontWeight = FontWeight.Bold)
                         Text("Soldiers: $army")
                         Button(
