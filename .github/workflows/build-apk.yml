@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: '35 * * * *'
   push:
-    branches: [ main, master ]
+    branches: [ main, master, ai-kingdom-combat ]
     tags: [ 'v*' ]
 
 permissions:

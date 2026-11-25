@@ -73,7 +73,11 @@ object CityGrowthSystem {
     private const val CAPACITY_PER_HOUSE_LEVEL = 500L
 
     fun populationCapacity(city: CityData): Int {
-        val houses = (city.buildings["House"] ?: city.housingLevel - 1).coerceAtLeast(0).toLong()
+        // Save migration can leave the legacy housingLevel and House building level out of sync.
+        // Use the greater value so a stale building entry cannot suppress previously granted housing.
+        val buildingHouseLevels = (city.buildings["House"] ?: 0).toLong().coerceAtLeast(0L)
+        val legacyHouseLevels = (city.housingLevel.toLong() - 1L).coerceAtLeast(0L)
+        val houses = maxOf(buildingHouseLevels, legacyHouseLevels)
         val capacity = BASE_CAPACITY + houses * CAPACITY_PER_HOUSE_LEVEL
         return maxOf(city.population.coerceAtLeast(0).toLong(), capacity)
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
