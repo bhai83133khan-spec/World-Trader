@@ -294,28 +294,48 @@ private fun OldWorldTraderApp() {
                         )
                     }
                     5 -> {
-                        Text("ARMY RECRUITMENT", fontWeight = FontWeight.Bold)
-                        Text("Soldiers: $army")
+                        Text("ARMY & DEFENSE", fontWeight = FontWeight.Bold)
+                        Text("Soldiers: $army • Annual upkeep: ${ArmySystem.annualUpkeep(army)} gold")
+                        Text("Upkeep is 1 gold per soldier, paid when you advance the year.")
+                        if (fleetState.isAtSea) Text("Recruiting and attacks are unavailable while your fleet is at sea.")
                         Button(
-                            enabled = gold >= 100 && army <= Int.MAX_VALUE - 10,
-                            onClick = { gold -= 100; army += 10; message = "10 troops recruited" },
+                            enabled = !fleetState.isAtSea && gold >= 100 && army <= Int.MAX_VALUE - 10,
+                            onClick = {
+                                val result = ArmySystem.recruit(army, gold, 10, 100)
+                                if (result.success) { army = result.army; gold = result.gold }
+                                message = result.message
+                            },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Recruit 10 • 100 gold") }
                         Button(
-                            enabled = gold >= 500 && army <= Int.MAX_VALUE - 60,
-                            onClick = { gold -= 500; army += 60; message = "60 troops recruited" },
+                            enabled = !fleetState.isAtSea && gold >= 500 && army <= Int.MAX_VALUE - 60,
+                            onClick = {
+                                val result = ArmySystem.recruit(army, gold, 60, 500)
+                                if (result.success) { army = result.army; gold = result.gold }
+                                message = result.message
+                            },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Recruit 60 • 500 gold") }
+                        cities.filter { it.owned }.forEach { ownedCity ->
+                            Text("Defense • ${ownedCity.name}: ${ArmySystem.cityDefense(ownedCity)}")
+                        }
                         cities.filter { !it.owned }.forEach { target ->
+                            val defense = ArmySystem.cityDefense(target)
+                            val required = ArmySystem.minimumAttackForce(target)
                             Button(
-                                enabled = army >= target.defense,
+                                enabled = !fleetState.isAtSea && army >= 10,
                                 onClick = {
-                                    army -= target.defense
-                                    cities = cities.map { if (it.id == target.id) it.copy(owned = true) else it }
-                                    message = "Conquered ${target.name}"
+                                    val battle = ArmySystem.attack(army, target)
+                                    if (battle.valid) {
+                                        army = battle.remainingArmy
+                                        battle.capturedCity?.let { captured ->
+                                            cities = cities.map { if (it.id == target.id) captured else it }
+                                        }
+                                    }
+                                    message = battle.message
                                 },
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Conquer ${target.name} • requires ${target.defense}") }
+                            ) { Text("Attack ${target.name} • Defense $defense • Need $required troops") }
                         }
                     }
                     6 -> {
@@ -394,8 +414,10 @@ private fun OldWorldTraderApp() {
                                 ) else it
                             }
                             val income = cities.filter { it.owned }.sumOf { it.population.toLong() / 20L }
-                            gold = (gold.toLong() + income).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                            message = "Year advanced: city population growth and income collected."
+                            val annualSettlement = ArmySystem.settleYear(army, gold, income)
+                            gold = annualSettlement.gold
+                            army = annualSettlement.army
+                            message = annualSettlement.message
                         }
                     },
                     modifier = Modifier.fillMaxWidth()

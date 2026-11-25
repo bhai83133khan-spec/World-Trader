@@ -54,7 +54,7 @@ fun CityDashboard(
             Text("NEXT YEAR PREVIEW", fontWeight = FontWeight.Bold)
             Text(if (city.owned) "Population: +$growth people" else "Population: no growth while unowned")
             Text(if (city.owned) "City income: +$nextYearIncome gold" else "City income: 0 gold while unowned")
-            Text("Income is collected after population growth; no city upkeep is currently charged.")
+            Text("Army upkeep (1 gold per soldier/year) is charged at Advance Year.")
         }
     }
 
