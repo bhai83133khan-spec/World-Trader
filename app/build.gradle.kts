@@ -77,6 +77,8 @@ val verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
     }
 }
 
-tasks.named("assembleRelease") {
-    dependsOn(verifyReleaseSigning)
+tasks.configureEach {
+    if (name == "assembleRelease") {
+        dependsOn(verifyReleaseSigning)
+    }
 }
