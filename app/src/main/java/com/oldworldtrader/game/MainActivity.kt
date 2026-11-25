@@ -473,7 +473,7 @@ private fun OldWorldTraderApp() {
                             })
                             cities = grownCities
                             val income = WorldTurnSystem.kingdomIncome(grownCities)
-                            val annualSettlement = ArmySystem.settleYear(army, gold, income)
+                            val annualSettlement = ArmySystem.settleYear(army, gold, income.toLong())
                             gold = annualSettlement.gold
                             army = annualSettlement.army
                             message = annualSettlement.message
