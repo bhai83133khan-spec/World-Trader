@@ -145,4 +145,19 @@ class CityGarrisonSystemTest {
             CityGarrisonSystem.applyDesertions(original, 25))
         assertEquals(mapOf("bag" to 10), CityGarrisonSystem.applyDesertions(original, 50))
     }
+    @Test
+    fun withdrawalCanRecoverLegacyOverCapacityGarrisonWithoutCreatingTroops() {
+        // Older saves may contain a garrison above the current capacity after balance changes.
+        // Withdrawal should allow the player to reduce it back into a valid state.
+        val city = city()
+        val overCapacity = 120
+        assertEquals(120, CityGarrisonSystem.maxWithdrawable(0, overCapacity, city))
+
+        val result = CityGarrisonSystem.withdraw(0, overCapacity, 20, city)
+        assertTrue(result.success)
+        assertEquals(20, result.fieldArmy)
+        assertEquals(100, result.garrison)
+        assertEquals(overCapacity, result.fieldArmy + result.garrison)
+    }
+
 }
