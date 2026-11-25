@@ -2,8 +2,12 @@
 
 **Game title:** Old World Trader  
 **Platform:** Android, Kotlin + Jetpack Compose  
-**Goal:** Offline-capable strategy, city management, trading, ships, and empire progression.  
+**Goal:** Offline-capable premium medieval strategy game: trading, ships, city management, warfare, kingdom/empire progression, research and rich visual presentation.  
 **APK policy:** Do not download/install until the user explicitly requests it.
+
+## Quality and game-size policy
+
+The former **50 MB target is cancelled**. There is no hard APK-size cap. A finished game may be **200–400 MB** when the size is justified by original, high-quality maps, city/port/ship/building art, animations, audio, and gameplay content. Visual quality and complete gameplay take priority over minimizing APK size. Assets should still be optimized, deduplicated, and bundled for offline play.
 
 ## Required gameplay systems
 
@@ -52,17 +56,20 @@
 - [ ] QA: Android build, install, smoke tests, edge cases, balance review
 
 ## Current implementation snapshot
+
 Implemented in repository:
 - Basic Compose prototype: city list/founding, building upgrades, annual advancement, recruitment and conquest
 - Starter economy and progression data models
 - City-specific market transaction engine for market quotes, price trends, stock and cargo validation
 - **Market tab integration:** select a trading port; show city/year/stock-aware prices and trend; track port stock independently and shared cargo; buy/sell through the transaction engine with quantity, affordability, inventory and overflow checks
 - **Seasonal market events:** repeatable commodity/city/year supply-surplus, shortage, high-demand, high-supply, or balanced factors are integrated into the port UI; trends compare current and prior-year event factors
-- **City shops:** owned-city gated shop purchase (1,000 gold), cargo-to-shop stocking, customer sales at 25% retail markup, cash collection, offline save/load for shop stock and revenue; transaction tests and APK build verified in CI run #95
+- **City shops:** owned-city gated shop purchase, cargo-to-shop stocking, customer sales, cash collection, offline save/load for shop stock and revenue; transaction tests and APK build verified in CI
 - **Trend-risk warnings:** absolute price trend of 8%+ is Moderate and 20%+ is High; the classifier uses Long arithmetic to safely handle extreme input values
-- JUnit test added for city-stock isolation and separate port quotes
+- Kingdom progression and research logic with tests
+- City travel and visited-port persistence with tests
+- Fleet and army systems with domain tests
 - GitHub Actions runs unit tests before the debug APK build
 
-**Not yet implemented:** additional city services and upkeep, manual supply/demand controls, separate country trade, ship/fleet and route systems, kingdom/intelligence/research, tutorial, and on-device QA.
+**Not yet implemented or not fully verified:** additional city services and upkeep, complete separate country trade, deeper autonomous enemy kingdoms, complete multi-screen navigation and visual design, tutorial, safe save migration review, and on-device QA.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.
