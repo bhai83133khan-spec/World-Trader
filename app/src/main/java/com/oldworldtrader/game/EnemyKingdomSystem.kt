@@ -49,7 +49,7 @@ object EnemyKingdomSystem {
     /** Build compatible initial AI state from the existing city list and territory fields. */
     fun initialize(cities: List<CityData>, playerKingdom: String): EnemyKingdomState {
         val kingdoms = cities.asSequence()
-            .filter { it.country != playerKingdom && it.controlledBy == null }
+            .filter { !it.owned && it.country != playerKingdom && it.controlledBy == null }
             .groupBy { it.country }
             .mapValues { (id, holdings) ->
                 val seedArmy = holdings.sumOf { ArmySystem.cityDefense(it).toLong() * 2L }
@@ -77,7 +77,7 @@ object EnemyKingdomSystem {
         val reports = mutableListOf<BattleReport>()
 
         kingdoms.toSortedMap().forEach { (kingdomId, original) ->
-            val kingdomCities = updatedCities.filter { it.country == kingdomId && it.controlledBy == null }
+            val kingdomCities = updatedCities.filter { it.country == kingdomId && !it.owned && it.controlledBy == null }
             if (kingdomCities.isEmpty()) return@forEach
             val population = kingdomCities.sumOf { it.population.toLong().coerceAtLeast(0L) }
             val reinforcements = (population / 500L).coerceIn(2L, 10_000L)

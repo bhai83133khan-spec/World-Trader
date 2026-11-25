@@ -29,7 +29,7 @@ class GameTurnSystemTest {
         )
         assertEquals(5, result.year)
         assertEquals("player", result.cities.first { it.id == "home" }.controlledBy)
-        assertEquals(1_010, result.cities.first { it.id == "home" }.population)
+        assertEquals(1_000, result.cities.first { it.id == "home" }.population) // Housing capacity prevents growth at the cap.
         assertEquals(50, result.cityIncome)
         assertEquals(1_040, result.gold)
         assertEquals(10, result.army)

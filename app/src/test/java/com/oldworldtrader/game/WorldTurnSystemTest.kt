@@ -21,8 +21,8 @@ class WorldTurnSystemTest {
         val city = CityData("a", "A", "Egypt", 2_000, 500, 10, owned = true,
             controlledBy = EnemyKingdomSystem.PLAYER_ID,
             buildings = mutableMapOf("Market" to 2, "Harbor" to 1))
-        assertEquals(180, WorldTurnSystem.ownedCityIncome(city, 10))
-        assertEquals(360, WorldTurnSystem.ownedCityIncome(city, 20))
+        assertEquals(175, WorldTurnSystem.ownedCityIncome(city, 10))
+        assertEquals(350, WorldTurnSystem.ownedCityIncome(city, 20))
         assertEquals(0, WorldTurnSystem.ownedCityIncome(city, -10))
         assertEquals(0, WorldTurnSystem.ownedCityIncome(city.copy(controlledBy = "Rival"), 10))
     }
