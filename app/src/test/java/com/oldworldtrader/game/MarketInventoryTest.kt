@@ -30,6 +30,21 @@ class MarketInventoryTest {
     }
 
     @Test
+    fun buyRespectsSelectedShipCapacityAcrossAllGoods() {
+        val state = MarketState(cargo = mapOf("Wheat" to 29))
+        val oneMore = state.buy("alex", wheat, quote, quantity = 1, gold = 100, cargoCapacity = 30)
+        assertTrue(oneMore.success)
+        assertEquals(30, oneMore.state.cargoAmount("Wheat"))
+
+        val twoMore = state.buy("alex", wheat, quote, quantity = 2, gold = 100, cargoCapacity = 30)
+        assertFalse(twoMore.success)
+        assertEquals(29, twoMore.state.cargoAmount("Wheat"))
+        val crossGoods = MarketState(cargo = mapOf("Wheat" to 20, "Wood" to 10))
+            .buy("alex", wheat, quote, quantity = 1, gold = 100, cargoCapacity = 30)
+        assertFalse(crossGoods.success)
+    }
+
+    @Test
     fun cityStockIsIndependentAndCanBeQuotedSeparately() {
         val initial = MarketState()
         val alexQuote = MarketSystem.quote(wheat, cityIndex = 0, year = 1, stock = initial.stock("alex", "Wheat"))
