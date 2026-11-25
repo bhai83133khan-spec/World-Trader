@@ -84,6 +84,7 @@ private fun OldWorldTraderApp() {
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
     val kingdomSnapshot = KingdomProgression.evaluate(cities)
     val militarySummary = ArmySystem.kingdomMilitarySummary(army, cities, cityGarrisons)
+    val economySummary = KingdomEconomySummarySystem.evaluate(cities, army, cityGarrisons)
     val cityFoundingCost = KingdomProgression.foundingCost(cities)
     val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research", "War Reports", "Contracts")
 
@@ -453,6 +454,20 @@ private fun OldWorldTraderApp() {
                                     Text("Building levels: ${metrics.ownedBuildingLevels} / ${next.buildingLevelsRequired}")
                                     Text("Reach all three targets to unlock the next founding discount.")
                                 } else Text("Maximum kingdom rank reached. Your realm is an empire.")
+                            }
+                        }
+                    }
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("ANNUAL KINGDOM ECONOMY", fontWeight = FontWeight.Bold)
+                            Text("Owned settlements: ${economySummary.ownedCities} • Population: ${economySummary.ownedPopulation}")
+                            Text("Gross city income: +${economySummary.grossAnnualIncome} gold")
+                            Text("City service upkeep: -${economySummary.cityServiceUpkeep} gold")
+                            Text("Field army upkeep: -${economySummary.fieldArmyUpkeep} gold")
+                            Text("Garrison upkeep: -${economySummary.garrisonUpkeep} gold")
+                            Text("Net annual balance: ${economySummary.netAnnualBalance} gold", fontWeight = FontWeight.Bold)
+                            WorldTurnSystem.migrateOwnership(cities).filter(CityGarrisonSystem::isPlayerControlled).forEach { ownedCity ->
+                                Text("${ownedCity.name}: +${WorldTurnSystem.ownedCityIncome(ownedCity)} income • -${WorldTurnSystem.cityServiceUpkeep(ownedCity)} upkeep")
                             }
                         }
                     }
