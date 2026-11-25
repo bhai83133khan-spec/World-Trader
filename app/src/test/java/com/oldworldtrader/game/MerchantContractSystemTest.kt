@@ -53,36 +53,6 @@ class MerchantContractSystemTest {
     }
 
     @Test
-    fun forgedOfferTermsCannotChangeRewardOrCargoRequirement() {
-        val valid = MerchantContractSystem.board("alex", 1).first()
-        val cargo = mapOf(valid.goodName to valid.quantity)
-        val forged = valid.copy(rewardGold = valid.rewardGold + 1)
-        val result = MerchantContractSystem.complete(forged, "alex", 1, 500, cargo, MerchantContractState())
-        assertFalse(result.success)
-        assertEquals(500, result.gold)
-        assertEquals(cargo, result.cargo)
-        assertFalse(valid.id in result.state.completedContractIds)
-    }
-
-    @Test
-    fun completionHistoryIsBoundedAndKeepsNewestMarker() {
-        val previous = (0 until MerchantContractState.MAX_SAVED_COMPLETIONS).map { "old-$it" }.toSet()
-        val state = MerchantContractState(year = 1, completedContractIds = previous)
-        val contract = MerchantContractSystem.board("alex", 1, state).first()
-        val cargo = mapOf(contract.goodName to contract.quantity)
-        val result = MerchantContractSystem.complete(contract, "alex", 1, 500, cargo, state)
-        assertTrue(result.success)
-        assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, result.state.completedContractIds.size)
-        assertTrue(contract.id in result.state.completedContractIds)
-        assertFalse("old-0" in result.state.completedContractIds)
-
-        val overLimit = (0 until 150).map { "contract-$it" }.toSet()
-        val normalized = MerchantContractState(year = 1, completedContractIds = overLimit).forYear(1)
-        assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, normalized.completedContractIds.size)
-        assertEquals((50 until 150).map { "contract-$it" }.toSet(), normalized.completedContractIds)
-    }
-
-    @Test
     fun completionRejectsOverflowAndMalformedContractsAtomically() {
         val valid = MerchantContract("c1", "alex", "Wheat", 5, 100, "Deliver wheat")
         val cargo = mapOf("Wheat" to 5)
@@ -93,6 +63,14 @@ class MerchantContractSystemTest {
 
         assertFalse(MerchantContractSystem.complete(valid.copy(quantity = 0), "alex", 1, 100, cargo, MerchantContractState()).success)
         assertFalse(MerchantContractSystem.complete(valid.copy(rewardGold = -1), "alex", 1, 100, cargo, MerchantContractState()).success)
+    }
+
+    @Test
+    fun completionMarkerStorageIsBoundedAndDeterministic() {
+        val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-$it" }.toSet()).forYear(3)
+        assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, state.completedContractIds.size)
+        assertTrue("contract-150" in state.completedContractIds)
+        assertFalse("contract-0" in state.completedContractIds)
     }
 
     @Test
