@@ -55,13 +55,16 @@ private fun OldWorldTraderApp() {
     val current = cities.firstOrNull { it.id == selectedCityId }
     val marketCity = cities.firstOrNull { it.id == marketCityId } ?: cities.first()
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
-    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet")
+    val kingdomSnapshot = KingdomProgression.evaluate(cities)
+    val cityFoundingCost = KingdomProgression.foundingCost(cities)
+    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom")
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF285743))) {
         Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))) {
             Column(Modifier.fillMaxWidth().background(Color(0xFF1E342B)).padding(12.dp)) {
                 Text("⚓ OLD WORLD TRADER", color = Color(0xFFF2D49A), fontWeight = FontWeight.Bold)
                 Text("Gold $gold • Army $army • Year $year", color = Color.White)
+                Text("Kingdom ${kingdomSnapshot.currentRank.title} • Founding discount ${kingdomSnapshot.currentRank.foundingDiscountPercent}%", color = Color.White)
                 Text("Auto-save: local device", color = Color(0xFFBFD9CC), style = MaterialTheme.typography.labelSmall)
             }
             ScrollableTabRow(selectedTabIndex = tab) {
@@ -96,19 +99,19 @@ private fun OldWorldTraderApp() {
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Button(
-                                enabled = gold >= 2500 && EconomyLogic.canFoundCityName(cityName, cities),
+                                enabled = gold >= cityFoundingCost && EconomyLogic.canFoundCityName(cityName, cities),
                                 onClick = {
-                                    gold -= 2500
+                                    gold -= cityFoundingCost
                                     val newCity = CityData(
                                         "city${cities.size + 1}", cityName.trim(), selectedCountry,
-                                        300, 2500, 10, true
+                                        300, cityFoundingCost, 10, true
                                     )
                                     cities = cities + newCity
                                     cityName = ""
-                                    message = "New settlement founded!"
+                                    message = "New settlement founded for ${cityFoundingCost} gold. Kingdom rank: ${kingdomSnapshot.currentRank.title}."
                                 },
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Found city • 2,500 gold") }
+                            ) { Text("Found city • ${cityFoundingCost} gold") }
                         } else {
                             CityDashboard(
                                 city = current,
@@ -351,6 +354,30 @@ private fun OldWorldTraderApp() {
                                 message = action.message
                             }
                         )
+                    }
+                    7 -> {
+                        val metrics = kingdomSnapshot.metrics
+                        val next = kingdomSnapshot.nextRank
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("KINGDOM PROGRESSION", fontWeight = FontWeight.Bold)
+                                Text("Current rank: ${kingdomSnapshot.currentRank.title}", style = MaterialTheme.typography.titleMedium)
+                                Text("Settlement founding discount: ${kingdomSnapshot.currentRank.foundingDiscountPercent}%")
+                                Text("Current city founding cost: ${cityFoundingCost} gold")
+                                Text("Owned cities: ${metrics.ownedCities}")
+                                Text("Owned population: ${metrics.ownedPopulation}")
+                                Text("Building levels: ${metrics.ownedBuildingLevels}")
+                                if (next != null) {
+                                    Text("NEXT RANK • ${next.title}", fontWeight = FontWeight.Bold)
+                                    Text("Cities: ${metrics.ownedCities} / ${next.ownedCitiesRequired}")
+                                    Text("Population: ${metrics.ownedPopulation} / ${next.populationRequired}")
+                                    Text("Building levels: ${metrics.ownedBuildingLevels} / ${next.buildingLevelsRequired}")
+                                    Text("Reach all three targets to unlock the next founding discount.")
+                                } else {
+                                    Text("Maximum kingdom rank reached. Your realm is an empire.")
+                                }
+                            }
+                        }
                     }
                 }
                 Button(
