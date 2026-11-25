@@ -52,7 +52,9 @@ private fun OldWorldTraderApp() {
         CityData("del", "Delhi", "India", 1800, 8000, 25),
         CityData("bag", "Baghdad", "Iraq", 2000, 9000, 30)
     )) }
-    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId) {
+    var enemyKingdomState by remember { mutableStateOf(savedGame?.enemyKingdomState ?: EnemyKingdomState()) }
+    var battleReports by remember { mutableStateOf(savedGame?.battleReports ?: emptyList()) }
+    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports) {
         GameSaveStore.save(
             context,
             SavedGameState(
@@ -65,7 +67,9 @@ private fun OldWorldTraderApp() {
                 shopState = shopState,
                 fleetState = fleetState,
                 researchState = researchState,
-                marketCityId = marketCityId
+                marketCityId = marketCityId,
+                enemyKingdomState = enemyKingdomState,
+                battleReports = battleReports
             )
         )
     }
@@ -75,7 +79,7 @@ private fun OldWorldTraderApp() {
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
     val kingdomSnapshot = KingdomProgression.evaluate(cities)
     val cityFoundingCost = KingdomProgression.foundingCost(cities)
-    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research")
+    val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research", "War Reports")
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF285743))) {
         Column(Modifier.fillMaxSize().background(Color(0xFFF3EBDD))) {
@@ -456,6 +460,15 @@ private fun OldWorldTraderApp() {
                             }
                         )
                     }
+                    9 -> {
+                        BattleReportScreen(
+                            reports = battleReports,
+                            onSelectCity = { cityId ->
+                                selectedCityId = cityId
+                                tab = 0
+                            }
+                        )
+                    }
                 }
                 Button(
                     onClick = {
@@ -471,12 +484,16 @@ private fun OldWorldTraderApp() {
                                         .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
                                 ) else city
                             })
-                            cities = grownCities
-                            val income = WorldTurnSystem.kingdomIncome(grownCities)
+                            val enemyTurn = WorldTurnSystem.enemyTurn(enemyKingdomState, grownCities, year, selectedCountry)
+                            enemyKingdomState = enemyTurn.state
+                            cities = enemyTurn.cities
+                            battleReports = (battleReports + enemyTurn.reports).takeLast(30)
+                            val income = WorldTurnSystem.kingdomIncome(enemyTurn.cities)
                             val annualSettlement = ArmySystem.settleYear(army, gold, income.toLong())
                             gold = annualSettlement.gold
                             army = annualSettlement.army
-                            message = annualSettlement.message
+                            val enemySummary = enemyTurn.reports.joinToString(" ") { it.summary }
+                            message = if (enemySummary.isBlank()) annualSettlement.message else "${annualSettlement.message} $enemySummary"
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
