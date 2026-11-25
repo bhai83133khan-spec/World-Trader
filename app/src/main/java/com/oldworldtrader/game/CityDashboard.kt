@@ -23,6 +23,7 @@ fun CityDashboard(
     garrison: Int = 0,
     fieldArmy: Int = 0,
     otherOwnedCities: List<CityData> = emptyList(),
+    otherCityGarrisons: Map<String, Int> = emptyMap(),
     garrisonActionsEnabled: Boolean = true,
     onStation: (Int) -> Unit = {},
     onWithdraw: (Int) -> Unit = {},
@@ -111,7 +112,7 @@ fun CityDashboard(
                     otherOwnedCities.filter(CityGarrisonSystem::isPlayerControlled).forEach { destination ->
                         val destinationGarrison = CityGarrisonSystem.maxTransferable(
                             cityGarrison = garrison,
-                            destinationGarrison = 0,
+                            destinationGarrison = otherCityGarrisons[destination.id] ?: 0,
                             destination = destination
                         )
                         Text("${destination.name}: ${destinationGarrison} troops can be received")
