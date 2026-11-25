@@ -59,7 +59,9 @@ class WorldTurnSystemTest {
         assertEquals(999, first.state.kingdoms.getValue("North").army)
 
         val repeated = WorldTurnSystem.enemyTurn(first.state, first.cities, 1, "Playerland")
-        assertEquals(first, repeated)
+        assertTrue(repeated.reports.isEmpty())
+        assertEquals(first.state, repeated.state)
+        assertEquals(first.cities, repeated.cities)
     }
 
 }
