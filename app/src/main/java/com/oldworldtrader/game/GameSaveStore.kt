@@ -11,7 +11,8 @@ data class SavedGameState(
     val selectedCountry: String,
     val cities: List<CityData>,
     val marketState: MarketState,
-    val shopState: ShopState = ShopState()
+    val shopState: ShopState = ShopState(),
+    val fleetState: FleetState = FleetState()
 )
 
 /** Lightweight, offline save snapshot stored in app-private preferences. */
@@ -76,6 +77,26 @@ object GameSaveStore {
                 )
             }
 
+            val fleetJson = root.optJSONObject("fleet")
+            val ownedShipsArray = fleetJson?.optJSONArray("ownedShipIds")
+            val ownedShipIds = ownedShipsArray?.let { array ->
+                (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }.toSet()
+            }
+            val voyageJson = fleetJson?.optJSONObject("voyage")
+            val savedVoyage = voyageJson?.let {
+                Voyage(
+                    routeId = it.optString("routeId"),
+                    destinationPortId = it.optString("destinationPortId"),
+                    remainingDays = it.optInt("remainingDays", 0)
+                )
+            }
+            val fleetState = FleetSystem.restore(
+                ownedShipIds = ownedShipIds,
+                selectedShipId = fleetJson?.optString("selectedShipId"),
+                currentPortId = fleetJson?.optString("currentPortId"),
+                voyage = savedVoyage
+            )
+
             SavedGameState(
                 gold = root.optInt("gold", 12000).coerceAtLeast(0),
                 year = root.optInt("year", 1).coerceAtLeast(1),
@@ -83,7 +104,8 @@ object GameSaveStore {
                 selectedCountry = root.optString("selectedCountry", "Ottoman Empire").ifBlank { "Ottoman Empire" },
                 cities = cities,
                 marketState = MarketState(cityStocks = stocks, cargo = cargo),
-                shopState = ShopState(shops = shops)
+                shopState = ShopState(shops = shops),
+                fleetState = fleetState
             )
         } catch (_: Exception) {
             null
@@ -140,6 +162,22 @@ object GameSaveStore {
             )
         }
         root.put("shops", shopsJson)
+        val fleetJson = JSONObject()
+        val ownedShips = JSONArray()
+        state.fleetState.ownedShipIds.sorted().forEach { ownedShips.put(it) }
+        fleetJson.put("ownedShipIds", ownedShips)
+            .put("selectedShipId", state.fleetState.selectedShipId)
+            .put("currentPortId", state.fleetState.currentPortId)
+        state.fleetState.voyage?.let { voyage ->
+            fleetJson.put(
+                "voyage",
+                JSONObject()
+                    .put("routeId", voyage.routeId)
+                    .put("destinationPortId", voyage.destinationPortId)
+                    .put("remainingDays", voyage.remainingDays)
+            )
+        }
+        root.put("fleet", fleetJson)
 
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(KEY_SNAPSHOT, root.toString()).apply()
