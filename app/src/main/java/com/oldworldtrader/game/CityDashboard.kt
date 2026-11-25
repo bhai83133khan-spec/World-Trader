@@ -26,8 +26,8 @@ fun CityDashboard(
     onWithdraw: (Int) -> Unit = {}
 ) {
     Text("CITY DASHBOARD • ${city.name}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-    if (!city.owned) {
-        Text("This city is not under your control. You can inspect it, but cannot build here.")
+    if (!CityGarrisonSystem.isPlayerControlled(city)) {
+        Text("This city is not under your control. You can inspect it, but cannot build or manage its garrison.")
     }
 
     val summary = listOf(
@@ -68,8 +68,10 @@ fun CityDashboard(
         }
     }
 
-    if (city.owned) {
+    if (CityGarrisonSystem.isPlayerControlled(city)) {
         val capacity = CityGarrisonSystem.capacity(city)
+        val stationable = CityGarrisonSystem.maxStationable(fieldArmy, garrison, city)
+        val withdrawable = CityGarrisonSystem.maxWithdrawable(garrison, city)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("CITY GARRISON", fontWeight = FontWeight.Bold)
@@ -78,15 +80,27 @@ fun CityDashboard(
                 Text("Annual upkeep: ${CityGarrisonSystem.annualUpkeep(garrison)} gold")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        enabled = fieldArmy >= 10 && garrison + 10 <= capacity,
+                        enabled = stationable >= 10,
                         onClick = { onStation(10) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Station 10") }
                     Button(
-                        enabled = garrison >= 10,
+                        enabled = stationable > 0,
+                        onClick = { onStation(stationable) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Station all • $stationable") }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        enabled = withdrawable >= 10 && fieldArmy.toLong() + 10L <= Int.MAX_VALUE.toLong(),
                         onClick = { onWithdraw(10) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Withdraw 10") }
+                    Button(
+                        enabled = withdrawable > 0 && fieldArmy.toLong() + withdrawable.toLong() <= Int.MAX_VALUE.toLong(),
+                        onClick = { onWithdraw(withdrawable) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Withdraw all • $withdrawable") }
                 }
             }
         }

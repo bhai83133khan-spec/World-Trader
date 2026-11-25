@@ -18,6 +18,18 @@ class CityGarrisonSystemTest {
     }
 
     @Test
+    fun maxTransferAmountsRespectArmyAndCapacity() {
+        assertEquals(80, CityGarrisonSystem.maxStationable(80, 20, city()))
+        assertEquals(15, CityGarrisonSystem.maxStationable(80, 85, city()))
+        assertEquals(0, CityGarrisonSystem.maxStationable(80, 100, city()))
+        assertEquals(0, CityGarrisonSystem.maxStationable(Int.MAX_VALUE, 101, city()))
+        assertEquals(0, CityGarrisonSystem.maxStationable(80, 0, city(owned = false)))
+        assertEquals(30, CityGarrisonSystem.maxWithdrawable(30, city()))
+        assertEquals(0, CityGarrisonSystem.maxWithdrawable(-1, city()))
+        assertEquals(0, CityGarrisonSystem.maxWithdrawable(30, city(controller = "Rival")))
+    }
+
+    @Test
     fun stationingTransfersSoldiersWithoutCreatingOrDestroyingTroops() {
         val result = CityGarrisonSystem.station(80, 0, 10, city())
         assertTrue(result.success)

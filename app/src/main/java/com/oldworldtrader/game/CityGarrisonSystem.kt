@@ -1,6 +1,6 @@
 package com.oldworldtrader.game
 
-data class GarrisonTransferResult(
+ data class GarrisonTransferResult(
     val success: Boolean,
     val fieldArmy: Int,
     val garrison: Int,
@@ -23,6 +23,17 @@ object CityGarrisonSystem {
         return (BASE_CAPACITY.toLong() + levels.toLong() * SOLDIERS_PER_BARRACKS_LEVEL)
             .coerceAtMost(MAX_CAPACITY.toLong()).toInt()
     }
+
+    /** Largest safe transfer from the field army that fits this city's current capacity. */
+    fun maxStationable(fieldArmy: Int, garrison: Int, city: CityData): Int {
+        if (fieldArmy <= 0 || garrison < 0 || !isPlayerControlled(city)) return 0
+        return minOf(fieldArmy.toLong(), (capacity(city).toLong() - garrison.toLong()).coerceAtLeast(0L))
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    /** Largest safe transfer from this city's garrison back into the field army. */
+    fun maxWithdrawable(garrison: Int, city: CityData): Int =
+        if (garrison > 0 && isPlayerControlled(city)) garrison else 0
 
     fun station(fieldArmy: Int, garrison: Int, amount: Int, city: CityData): GarrisonTransferResult {
         if (fieldArmy < 0 || garrison < 0 || amount <= 0) return reject(fieldArmy, garrison, "Invalid garrison transfer.")
