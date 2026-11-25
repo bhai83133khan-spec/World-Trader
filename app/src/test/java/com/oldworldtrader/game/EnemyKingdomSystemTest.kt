@@ -105,6 +105,35 @@ class EnemyKingdomSystemTest {
     }
 
     @Test
+    fun cityGarrisonDefendsAgainstRivalAttackAndSurvivesWithCasualties() {
+        val home = city("home", "Playerland", owned = true, population = 1_000, defense = 10,
+            controlledBy = EnemyKingdomSystem.PLAYER_ID)
+        val rivalCity = city("rival", "North", population = 1_000, defense = 10)
+        val state = EnemyKingdomState(
+            kingdoms = mapOf("North" to EnemyKingdom("North", army = 60, treasury = 1_000, aggression = 100))
+        )
+        val result = EnemyKingdomSystem.advanceYear(state, listOf(home, rivalCity), 1, "Playerland", mapOf("home" to 80))
+
+        assertEquals("player", result.cities.first { it.id == "home" }.controlledBy)
+        assertEquals(68, result.cityGarrisons["home"])
+        assertTrue(result.reports.single().defenderStrength > ArmySystem.cityDefense(home))
+        assertEquals(1, result.reports.size)
+    }
+
+    @Test
+    fun capturedCityGarrisonIsRemovedFromSaveableResult() {
+        val home = city("home", "Playerland", owned = true, population = 1_000, defense = 10,
+            controlledBy = EnemyKingdomSystem.PLAYER_ID)
+        val rivalCity = city("rival", "North", population = 1_000, defense = 10)
+        val state = EnemyKingdomState(
+            kingdoms = mapOf("North" to EnemyKingdom("North", army = 500, treasury = 1_000, aggression = 100))
+        )
+        val result = EnemyKingdomSystem.advanceYear(state, listOf(home, rivalCity), 1, "Playerland", mapOf("home" to 50))
+        assertTrue(result.cities.first { it.id == "home" }.controlledBy != EnemyKingdomSystem.PLAYER_ID)
+        assertFalse("Captured city's garrison must be removed", "home" in result.cityGarrisons)
+    }
+
+    @Test
     fun duplicateYearIsIdempotent() {
         val cities = listOf(city("home", "Playerland", true, controlledBy = "player"), city("enemy", "Rival"))
         val initial = EnemyKingdomSystem.initialize(cities, "Playerland")

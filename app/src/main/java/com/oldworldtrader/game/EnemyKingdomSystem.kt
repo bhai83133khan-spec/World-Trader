@@ -40,7 +40,8 @@ data class BattleResolution(
 data class EnemyTurnResult(
     val state: EnemyKingdomState,
     val cities: List<CityData>,
-    val reports: List<BattleReport>
+    val reports: List<BattleReport>,
+    val cityGarrisons: Map<String, Int> = emptyMap()
 )
 
 /** Deterministic combat and offline AI turns. A given state and year always produce the same result. */
@@ -74,16 +75,18 @@ object EnemyKingdomSystem {
         state: EnemyKingdomState,
         cities: List<CityData>,
         year: Int,
-        playerKingdom: String
+        playerKingdom: String,
+        cityGarrisons: Map<String, Int> = emptyMap()
     ): EnemyTurnResult {
         if (year <= state.lastProcessedYear || year <= 0) {
-            return EnemyTurnResult(state, cities, emptyList())
+            return EnemyTurnResult(state, cities, emptyList(), cityGarrisons)
         }
         val initialized = initialize(cities, playerKingdom)
         // A kingdom with no remaining holdings cannot act again; discard orphaned saved state.
         val activeKingdomIds = initialized.kingdoms.keys
         val kingdoms = (initialized.kingdoms + state.kingdoms.filterKeys { it in activeKingdomIds }).toMutableMap()
         var updatedCities = cities
+        var updatedGarrisons = CityGarrisonSystem.sanitize(cityGarrisons, cities).toMutableMap()
         val reports = mutableListOf<BattleReport>()
 
         kingdoms.toSortedMap().forEach { (kingdomId, original) ->
@@ -101,15 +104,18 @@ object EnemyKingdomSystem {
             var kingdom = original.copy(army = army, treasury = treasury)
 
             val targets = updatedCities.filter { it.owned && it.controlledBy == PLAYER_ID }
-                .sortedWith(compareBy<CityData> { ArmySystem.cityDefense(it) }.thenBy { it.id })
+                .sortedWith(compareBy<CityData> {
+                    ArmySystem.cityDefense(it).toLong() + updatedGarrisons.getOrDefault(it.id, 0).toLong()
+                }.thenBy { it.id })
             val target = targets.firstOrNull()
             if (target != null && army >= ArmySystem.minimumAttackForce(target) && shouldAttack(kingdomId, year, kingdom.aggression)) {
-                val garrison = defenderGarrison(target)
+                val stationed = updatedGarrisons.getOrDefault(target.id, 0)
+                val defenders = if (stationed > 0) stationed else defenderGarrison(target)
                 val resolution = resolveBattle(
                     attacker = kingdomId,
                     defender = playerKingdom,
                     attackerArmy = army,
-                    defenderArmy = garrison,
+                    defenderArmy = defenders,
                     city = target,
                     gold = 0,
                     attackerIsPlayer = false,
@@ -122,12 +128,17 @@ object EnemyKingdomSystem {
                 )
                 resolution.report.capturedCity?.let { captured ->
                     updatedCities = updatedCities.map { if (it.id == target.id) captured else it }
+                    updatedGarrisons.remove(target.id)
+                } ?: if (stationed > 0) {
+                    if (resolution.defenderArmy > 0) updatedGarrisons[target.id] = resolution.defenderArmy
+                    else updatedGarrisons.remove(target.id)
                 }
             }
             kingdoms[kingdomId] = kingdom
         }
         return EnemyTurnResult(
-            EnemyKingdomState(kingdoms, year), updatedCities, reports
+            EnemyKingdomState(kingdoms, year), updatedCities, reports,
+            CityGarrisonSystem.sanitize(updatedGarrisons, updatedCities)
         )
     }
 

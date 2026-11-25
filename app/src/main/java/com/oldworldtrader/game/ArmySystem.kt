@@ -24,11 +24,16 @@ data class ArmyAnnualSettlement(
     val desertions: Int,
     val message: String,
     val cityUpkeep: Int = 0,
-    val unpaidCityUpkeep: Int = 0
+    val unpaidCityUpkeep: Int = 0,
+    val garrison: Int = 0,
+    val garrisonUpkeep: Int = 0,
+    val garrisonDesertions: Int = 0,
+    val unpaidGarrisonUpkeep: Int = 0
 )
 
 data class KingdomMilitarySummary(
     val fieldArmy: Long,
+    val garrisonedSoldiers: Long,
     val ownedCityDefense: Long,
     val totalDefense: Long,
     val defendedCities: Int
@@ -61,13 +66,20 @@ object ArmySystem {
     }
 
     /** Aggregate only player-controlled cities; legacy ownership is migrated before counting. */
-    fun kingdomMilitarySummary(army: Int, cities: List<CityData>): KingdomMilitarySummary {
+    fun kingdomMilitarySummary(
+        army: Int,
+        cities: List<CityData>,
+        garrisons: Map<String, Int> = emptyMap()
+    ): KingdomMilitarySummary {
         val fieldArmy = army.coerceAtLeast(0).toLong()
         val playerCities = WorldTurnSystem.migrateOwnership(cities).filter {
             it.owned && it.controlledBy == WorldTurnSystem.PLAYER_FACTION
         }
-        val cityDefense = playerCities.sumOf { cityDefense(it).toLong() }
-        return KingdomMilitarySummary(fieldArmy, cityDefense, fieldArmy + cityDefense, playerCities.size)
+        val safeGarrisons = CityGarrisonSystem.sanitize(garrisons, playerCities)
+        val stationed = safeGarrisons.values.sumOf { it.toLong() }.coerceAtMost(Int.MAX_VALUE.toLong())
+        val cityDefense = playerCities.sumOf { cityDefense(it).toLong() + safeGarrisons.getOrDefault(it.id, 0).toLong() }
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+        return KingdomMilitarySummary(fieldArmy, stationed, cityDefense, fieldArmy + cityDefense, playerCities.size)
     }
 
 
@@ -148,29 +160,50 @@ object ArmySystem {
      * Apply city income and army upkeep. If the treasury cannot cover upkeep,
      * one soldier deserts for each unpaid gold, up to the remaining army.
      */
-    fun settleYear(army: Int, gold: Int, cityIncome: Long, cityUpkeep: Long = 0L): ArmyAnnualSettlement {
+    fun settleYear(
+        army: Int,
+        gold: Int,
+        cityIncome: Long,
+        cityUpkeep: Long = 0L,
+        garrison: Int = 0
+    ): ArmyAnnualSettlement {
         val safeArmy = army.coerceAtLeast(0)
+        val safeGarrison = garrison.coerceAtLeast(0)
         val safeGold = gold.coerceAtLeast(0)
         val safeIncome = cityIncome.coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val safeCityUpkeep = cityUpkeep.coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val available = (safeGold.toLong() + safeIncome.toLong()).coerceAtMost(Int.MAX_VALUE.toLong())
         val remainingAfterCityUpkeep = (available - safeCityUpkeep.toLong()).coerceAtLeast(0L)
         val unpaidCityUpkeep = (safeCityUpkeep.toLong() - available).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-        val upkeep = annualUpkeep(safeArmy)
-        if (remainingAfterCityUpkeep >= upkeep.toLong()) {
-            val remainingGold = (remainingAfterCityUpkeep - upkeep.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-            return ArmyAnnualSettlement(
-                safeArmy, remainingGold, safeIncome, upkeep, 0,
-                "Year advanced: +$safeIncome city income, -$safeCityUpkeep city upkeep, -$upkeep army upkeep. Army maintained.",
-                safeCityUpkeep, unpaidCityUpkeep
-            )
+        val fieldUpkeep = annualUpkeep(safeArmy)
+        val garrisonUpkeep = CityGarrisonSystem.annualUpkeep(safeGarrison)
+        val fieldPaid = remainingAfterCityUpkeep.coerceAtMost(fieldUpkeep.toLong())
+        val fieldDesertions = (fieldUpkeep.toLong() - fieldPaid).coerceAtMost(safeArmy.toLong()).toInt()
+        val afterField = (remainingAfterCityUpkeep - fieldPaid).coerceAtLeast(0L)
+        val garrisonPaid = afterField.coerceAtMost(garrisonUpkeep.toLong())
+        val garrisonDesertions = (garrisonUpkeep.toLong() - garrisonPaid).coerceAtMost(safeGarrison.toLong()).toInt()
+        val remainingGold = (afterField - garrisonPaid).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val survivors = safeArmy - fieldDesertions
+        val garrisonSurvivors = safeGarrison - garrisonDesertions
+        val message = buildString {
+            append("Year advanced: +$safeIncome city income, -$safeCityUpkeep city upkeep, -$fieldUpkeep field army upkeep, -$garrisonUpkeep garrison upkeep.")
+            if (fieldDesertions > 0) append(" $fieldDesertions field soldiers deserted.")
+            if (garrisonDesertions > 0) append(" $garrisonDesertions stationed soldiers deserted.")
+            if (fieldDesertions == 0 && garrisonDesertions == 0) append(" Army and garrison maintained.")
         }
-        val desertions = (upkeep.toLong() - remainingAfterCityUpkeep).coerceAtMost(safeArmy.toLong()).toInt()
-        val survivors = safeArmy - desertions
         return ArmyAnnualSettlement(
-            survivors, 0, safeIncome, upkeep, desertions,
-            "Year advanced: +$safeIncome city income, -$safeCityUpkeep city upkeep, $upkeep army upkeep due. $desertions soldiers deserted because army upkeep was unpaid.",
-            safeCityUpkeep, unpaidCityUpkeep
+            army = survivors,
+            gold = remainingGold,
+            income = safeIncome,
+            upkeep = fieldUpkeep,
+            desertions = fieldDesertions,
+            message = message,
+            cityUpkeep = safeCityUpkeep,
+            unpaidCityUpkeep = unpaidCityUpkeep,
+            garrison = garrisonSurvivors,
+            garrisonUpkeep = garrisonUpkeep,
+            garrisonDesertions = garrisonDesertions,
+            unpaidGarrisonUpkeep = (garrisonUpkeep.toLong() - garrisonPaid).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         )
     }
 }

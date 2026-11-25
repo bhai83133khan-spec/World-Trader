@@ -16,7 +16,8 @@ data class SavedGameState(
     val researchState: ResearchState = ResearchState(),
     val marketCityId: String? = null,
     val enemyKingdomState: EnemyKingdomState = EnemyKingdomState(),
-    val battleReports: List<BattleReport> = emptyList()
+    val battleReports: List<BattleReport> = emptyList(),
+    val cityGarrisons: Map<String, Int> = emptyMap()
 )
 
 /** Lightweight, offline save snapshot stored in app-private preferences. */
@@ -52,6 +53,12 @@ object GameSaveStore {
                 )
             }
             if (cities.isEmpty()) return null
+            val garrisonJson = root.optJSONObject("cityGarrisons") ?: JSONObject()
+            val savedGarrisons = mutableMapOf<String, Int>()
+            garrisonJson.keys().forEach { cityId ->
+                savedGarrisons[cityId] = garrisonJson.optInt(cityId, 0).coerceAtLeast(0)
+            }
+            val cityGarrisons = CityGarrisonSystem.sanitize(savedGarrisons, cities)
 
             val stockJson = root.optJSONObject("cityStocks") ?: JSONObject()
             val stocks = mutableMapOf<String, Map<String, Int>>()
@@ -154,7 +161,8 @@ object GameSaveStore {
                     kingdoms = enemyKingdoms,
                     lastProcessedYear = enemiesJson.optInt("lastProcessedYear", 0).coerceAtLeast(0)
                 ),
-                battleReports = savedReports
+                battleReports = savedReports,
+                cityGarrisons = cityGarrisons
             )
         } catch (_: Exception) {
             null
@@ -188,6 +196,11 @@ object GameSaveStore {
                 .put("buildings", buildings).put("unlocked", unlocked))
         }
         root.put("cities", cityArray)
+        val garrisonJson = JSONObject()
+        CityGarrisonSystem.sanitize(state.cityGarrisons, state.cities).forEach { (cityId, count) ->
+            garrisonJson.put(cityId, count)
+        }
+        root.put("cityGarrisons", garrisonJson)
 
         val stockJson = JSONObject()
         state.marketState.cityStocks.forEach { (cityId, goods) ->

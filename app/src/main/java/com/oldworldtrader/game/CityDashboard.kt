@@ -19,7 +19,11 @@ fun CityDashboard(
     city: CityData,
     gold: Int,
     onUpgrade: (BuildingSpec) -> Unit,
-    upgradeDiscountPercent: Int = 0
+    upgradeDiscountPercent: Int = 0,
+    garrison: Int = 0,
+    fieldArmy: Int = 0,
+    onStation: (Int) -> Unit = {},
+    onWithdraw: (Int) -> Unit = {}
 ) {
     Text("CITY DASHBOARD • ${city.name}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
     if (!city.owned) {
@@ -29,7 +33,8 @@ fun CityDashboard(
     val summary = listOf(
         "Population" to city.population.toString(),
         "Treasury value" to city.treasuryValue.toString(),
-        "Defense strength" to CityDashboardRules.defenseStrength(city).toString(),
+        "Defense strength" to CityDashboardRules.defenseStrength(city, garrison).toString(),
+        "Garrison" to "$garrison soldiers",
         "Housing" to "Level ${city.housingLevel}",
         "Welfare" to CityDashboardRules.welfareLabel(city),
         "Electricity" to CityDashboardRules.electricityLabel(city)
@@ -60,6 +65,30 @@ fun CityDashboard(
             Text(if (city.owned) "Building/service upkeep: -$nextYearCityUpkeep gold" else "Building/service upkeep: 0 gold while unowned")
             Text(if (city.owned) "Net city contribution: $netCityIncome gold" else "Net city contribution: 0 gold")
             Text("Army upkeep (1 gold per soldier/year) is charged at Advance Year.")
+        }
+    }
+
+    if (city.owned) {
+        val capacity = CityGarrisonSystem.capacity(city)
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("CITY GARRISON", fontWeight = FontWeight.Bold)
+                Text("Stationed soldiers: $garrison / $capacity")
+                Text("Defense bonus: +$garrison")
+                Text("Annual upkeep: ${CityGarrisonSystem.annualUpkeep(garrison)} gold")
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        enabled = fieldArmy >= 10 && garrison + 10 <= capacity,
+                        onClick = { onStation(10) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Station 10") }
+                    Button(
+                        enabled = garrison >= 10,
+                        onClick = { onWithdraw(10) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Withdraw 10") }
+                }
+            }
         }
     }
 

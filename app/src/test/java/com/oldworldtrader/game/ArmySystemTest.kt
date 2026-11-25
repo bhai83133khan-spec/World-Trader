@@ -160,6 +160,36 @@ class ArmySystemTest {
     }
 
     @Test
+    fun kingdomMilitarySummaryIncludesSanitizedGarrisonInCityDefenseAndTotal() {
+        val home = CityData("home", "Home", "Egypt", 1_000, 1_000, 20, owned = true,
+            buildings = mutableMapOf("Army Barracks" to 1))
+        val rival = CityData("rival", "Rival", "Italy", 1_000, 1_000, 10, owned = true, controlledBy = "Rival")
+        val summary = ArmySystem.kingdomMilitarySummary(30, listOf(home, rival), mapOf("home" to 60, "rival" to 40, "missing" to 5))
+        assertEquals(30L, summary.fieldArmy)
+        assertEquals(60L, summary.garrisonedSoldiers)
+        assertEquals(100L, summary.ownedCityDefense)
+        assertEquals(130L, summary.totalDefense)
+        assertEquals(1, summary.defendedCities)
+    }
+
+    @Test
+    fun garrisonUpkeepIsPaidAfterFieldArmyAndUnpaidTroopsDesert() {
+        val paid = ArmySystem.settleYear(20, 50, 0, 0, 30)
+        assertEquals(20, paid.army)
+        assertEquals(30, paid.garrison)
+        assertEquals(0, paid.garrisonDesertions)
+        assertEquals(30, paid.garrisonUpkeep)
+        assertEquals(0, paid.gold)
+
+        val partial = ArmySystem.settleYear(20, 25, 0, 0, 30)
+        assertEquals(20, partial.army)
+        assertEquals(5, partial.garrison)
+        assertEquals(25, partial.garrisonDesertions)
+        assertEquals(25, partial.unpaidGarrisonUpkeep)
+        assertEquals(0, partial.gold)
+    }
+
+    @Test
     fun annualUpkeepIsPaidFromGoldAndCityIncome() {
         val result = ArmySystem.settleYear(80, 100, 30)
         assertEquals(80, result.army)

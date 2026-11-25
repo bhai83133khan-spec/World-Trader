@@ -42,6 +42,7 @@ private fun OldWorldTraderApp() {
     var selectedCountry by remember { mutableStateOf(savedGame?.selectedCountry ?: "Ottoman Empire") }
     var quantity by remember { mutableIntStateOf(1) }
     var army by remember { mutableIntStateOf(savedGame?.army ?: 0) }
+    var cityGarrisons by remember { mutableStateOf(savedGame?.cityGarrisons ?: emptyMap()) }
     var researchState by remember { mutableStateOf(savedGame?.researchState ?: ResearchState()) }
     var message by remember { mutableStateOf("Build your city, grow population, unlock new technologies.") }
     var cityName by remember { mutableStateOf("") }
@@ -56,7 +57,7 @@ private fun OldWorldTraderApp() {
     var travelCountry by remember { mutableStateOf(cities.firstOrNull()?.country ?: selectedCountry) }
     var enemyKingdomState by remember { mutableStateOf(savedGame?.enemyKingdomState ?: EnemyKingdomState()) }
     var battleReports by remember { mutableStateOf(savedGame?.battleReports ?: emptyList()) }
-    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports) {
+    LaunchedEffect(gold, year, army, cityGarrisons, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports) {
         GameSaveStore.save(
             context,
             SavedGameState(
@@ -71,7 +72,8 @@ private fun OldWorldTraderApp() {
                 researchState = researchState,
                 marketCityId = marketCityId,
                 enemyKingdomState = enemyKingdomState,
-                battleReports = battleReports
+                battleReports = battleReports,
+                cityGarrisons = cityGarrisons
             )
         )
     }
@@ -80,7 +82,7 @@ private fun OldWorldTraderApp() {
     val marketCity = cities.firstOrNull { it.id == marketCityId } ?: cities.first()
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
     val kingdomSnapshot = KingdomProgression.evaluate(cities)
-    val militarySummary = ArmySystem.kingdomMilitarySummary(army, cities)
+    val militarySummary = ArmySystem.kingdomMilitarySummary(army, cities, cityGarrisons)
     val cityFoundingCost = KingdomProgression.foundingCost(cities)
     val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research", "War Reports")
 
@@ -142,6 +144,28 @@ private fun OldWorldTraderApp() {
                                 city = current,
                                 gold = gold,
                                 upgradeDiscountPercent = ResearchSystem.buildingUpgradeDiscountPercent(researchState),
+                                garrison = cityGarrisons[current.id] ?: 0,
+                                fieldArmy = army,
+                                onStation = { amount ->
+                                    val result = CityGarrisonSystem.station(army, cityGarrisons[current.id] ?: 0, amount, current)
+                                    if (result.success) {
+                                        army = result.fieldArmy
+                                        cityGarrisons = cityGarrisons.toMutableMap().apply {
+                                            if (result.garrison > 0) put(current.id, result.garrison) else remove(current.id)
+                                        }
+                                    }
+                                    message = result.message
+                                },
+                                onWithdraw = { amount ->
+                                    val result = CityGarrisonSystem.withdraw(army, cityGarrisons[current.id] ?: 0, amount, current)
+                                    if (result.success) {
+                                        army = result.fieldArmy
+                                        cityGarrisons = cityGarrisons.toMutableMap().apply {
+                                            if (result.garrison > 0) put(current.id, result.garrison) else remove(current.id)
+                                        }
+                                    }
+                                    message = result.message
+                                },
                                 onUpgrade = { spec ->
                                     val reason = CityDashboardRules.upgradeBlockReason(current, spec, gold, ResearchSystem.buildingUpgradeDiscountPercent(researchState))
                                     if (reason != null) {
@@ -393,8 +417,9 @@ private fun OldWorldTraderApp() {
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Recruit 60 • ${recruit60Cost} gold") }
-                        cities.filter { it.owned }.forEach { ownedCity ->
-                            Text("Defense • ${ownedCity.name}: ${ArmySystem.cityDefense(ownedCity)}")
+                        WorldTurnSystem.migrateOwnership(cities).filter { it.owned && it.controlledBy == WorldTurnSystem.PLAYER_FACTION }.forEach { ownedCity ->
+                            val stationed = cityGarrisons[ownedCity.id] ?: 0
+                            Text("Defense • ${ownedCity.name}: ${ArmySystem.cityDefense(ownedCity) + stationed} (Garrison $stationed)")
                         }
                         cities.filter { !it.owned }.forEach { target ->
                             val defense = ArmySystem.cityDefense(target)
@@ -479,7 +504,8 @@ private fun OldWorldTraderApp() {
                                 Text("Building levels: ${metrics.ownedBuildingLevels}")
                                 Text("MILITARY STRENGTH", fontWeight = FontWeight.Bold)
                                 Text("Field army: ${militarySummary.fieldArmy}")
-                                Text("Owned city defense: ${militarySummary.ownedCityDefense}")
+                                Text("Stationed garrison: ${militarySummary.garrisonedSoldiers}")
+                                Text("Owned city defense (including garrison): ${militarySummary.ownedCityDefense}")
                                 Text("Total defense strength: ${militarySummary.totalDefense}")
                                 Text("Cities with defense: ${militarySummary.defendedCities}")
                                 if (next != null) {
@@ -533,15 +559,18 @@ private fun OldWorldTraderApp() {
                                         .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
                                 ) else city
                             })
-                            val enemyTurn = WorldTurnSystem.enemyTurn(enemyKingdomState, grownCities, year, selectedCountry)
+                            val enemyTurn = WorldTurnSystem.enemyTurn(enemyKingdomState, grownCities, year, selectedCountry, cityGarrisons)
                             enemyKingdomState = enemyTurn.state
                             cities = enemyTurn.cities
+                            cityGarrisons = enemyTurn.cityGarrisons
                             battleReports = (battleReports + enemyTurn.reports).takeLast(30)
                             val income = WorldTurnSystem.kingdomIncome(enemyTurn.cities)
                             val cityUpkeep = WorldTurnSystem.kingdomCityUpkeep(enemyTurn.cities)
-                            val annualSettlement = ArmySystem.settleYear(army, gold, income.toLong(), cityUpkeep.toLong())
+                            val garrisonUpkeep = CityGarrisonSystem.total(cityGarrisons)
+                            val annualSettlement = ArmySystem.settleYear(army, gold, income.toLong(), cityUpkeep.toLong(), garrisonUpkeep)
                             gold = annualSettlement.gold
                             army = annualSettlement.army
+                            cityGarrisons = CityGarrisonSystem.applyDesertions(cityGarrisons, annualSettlement.garrisonDesertions)
                             val enemySummary = enemyTurn.reports.joinToString(" ") { it.summary }
                             message = if (enemySummary.isBlank()) annualSettlement.message else "${annualSettlement.message} $enemySummary"
                         }

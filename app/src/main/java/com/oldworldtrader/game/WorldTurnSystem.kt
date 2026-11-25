@@ -13,10 +13,11 @@ object WorldTurnSystem {
         state: EnemyKingdomState,
         cities: List<CityData>,
         year: Int,
-        playerKingdom: String
+        playerKingdom: String,
+        cityGarrisons: Map<String, Int> = emptyMap()
     ): EnemyTurnResult {
         val migrated = migrateOwnership(cities)
-        return EnemyKingdomSystem.advanceYear(state, migrated, year, playerKingdom)
+        return EnemyKingdomSystem.advanceYear(state, migrated, year, playerKingdom, cityGarrisons)
     }
 
     fun ownedCityIncome(city: CityData, taxRatePercent: Int = 10): Int {

@@ -33,6 +33,7 @@
 
 ### Army and kingdoms
 - [ ] Recruit and maintain army with costs
+- [ ] City garrison station/withdraw, defense, capture losses, persistence, and annual upkeep
 - [x] City defense and conquest calculations (deterministic rules, capture validation and damage)
 - [x] City Dashboard displays city defense strength including defensive building bonuses
 - [x] Kingdom overview aggregates field army and owned-city defense strength
@@ -57,6 +58,7 @@
 Implemented in repository:
 - Basic Compose prototype: city list/founding, building upgrades, annual advancement, recruitment and conquest
 - Starter economy and progression data models
+- City garrison transfers, capacity, defense contribution, capture cleanup, save migration, and yearly upkeep are integrated (CI pending)
 - City-specific market transaction engine for market quotes, price trends, stock and cargo validation
 - **Market tab integration:** select a trading port; show city/year/stock-aware prices and trend; track port stock independently and shared cargo; buy/sell through the transaction engine with quantity, affordability, inventory and overflow checks
 - **Seasonal market events:** repeatable commodity/city/year supply-surplus, shortage, high-demand, high-supply, or balanced factors are integrated into the port UI; trends compare current and prior-year event factors

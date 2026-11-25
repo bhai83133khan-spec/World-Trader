@@ -33,7 +33,9 @@ object CityDashboardRules {
             .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
 
     /** Use the same fortification strength as combat, including defensive buildings. */
-    fun defenseStrength(city: CityData): Int = ArmySystem.cityDefense(city)
+    fun defenseStrength(city: CityData, garrison: Int = 0): Int =
+        (ArmySystem.cityDefense(city).toLong() + garrison.coerceAtLeast(0).toLong())
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 
     fun welfareLabel(city: CityData): String {
         val hasHospital = (city.buildings["Hospital"] ?: 0) > 0
