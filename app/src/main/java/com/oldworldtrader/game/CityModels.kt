@@ -10,7 +10,9 @@ data class CityData(
     var owned: Boolean = false,
     var housingLevel: Int = 1,
     var buildings: MutableMap<String, Int> = mutableMapOf(),
-    var unlocked: MutableSet<String> = mutableSetOf("Market", "Housing")
+    var unlocked: MutableSet<String> = mutableSetOf("Market", "Housing"),
+    /** Current controlling faction; absent in legacy saves and inferred from owned status. */
+    var controlledBy: String? = null
 )
 data class TradeGood(val name: String, val basePrice: Int)
 data class BuildingSpec(val name: String, val baseCost: Int, val unlockPopulation: Int, val populationBoost: Int, val description: String)
