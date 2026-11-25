@@ -11,7 +11,7 @@ class CityDashboardRulesTest {
         val city = CityData("new", "New City", "Egypt", 300, 2500, 10, owned = true)
 
         assertEquals(EconomyLogic.populationGrowth(city), CityDashboardRules.annualGrowth(city))
-        assertEquals(16, CityDashboardRules.nextYearIncome(city)) // 300 + 10 growth, then / 20
+        assertEquals(15, CityDashboardRules.nextYearIncome(city)) // 300 + 10 growth, then integer-divided by 20
     }
 
     @Test
