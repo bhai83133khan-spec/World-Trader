@@ -22,9 +22,11 @@ fun CityDashboard(
     upgradeDiscountPercent: Int = 0,
     garrison: Int = 0,
     fieldArmy: Int = 0,
+    otherOwnedCities: List<CityData> = emptyList(),
     garrisonActionsEnabled: Boolean = true,
     onStation: (Int) -> Unit = {},
-    onWithdraw: (Int) -> Unit = {}
+    onWithdraw: (Int) -> Unit = {},
+    onTransferGarrison: (String, Int) -> Unit = { _, _ -> }
 ) {
     Text("CITY DASHBOARD • ${city.name}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
     if (!CityGarrisonSystem.isPlayerControlled(city)) {
@@ -72,7 +74,6 @@ fun CityDashboard(
     if (CityGarrisonSystem.isPlayerControlled(city)) {
         val capacity = CityGarrisonSystem.capacity(city)
         val stationable = CityGarrisonSystem.maxStationable(fieldArmy, garrison, city)
-        // Include only troops that fit into the field army; near the integer limit a partial withdrawal is still useful.
         val withdrawable = CityGarrisonSystem.maxWithdrawable(fieldArmy, garrison, city)
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -104,6 +105,22 @@ fun CityDashboard(
                         onClick = { onWithdraw(withdrawable) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Withdraw up to $withdrawable") }
+                }
+                if (otherOwnedCities.isNotEmpty()) {
+                    Text("REINFORCE ANOTHER CITY", fontWeight = FontWeight.Bold)
+                    otherOwnedCities.filter(CityGarrisonSystem::isPlayerControlled).forEach { destination ->
+                        val destinationGarrison = CityGarrisonSystem.maxTransferable(
+                            cityGarrison = garrison,
+                            destinationGarrison = 0,
+                            destination = destination
+                        )
+                        Text("${destination.name}: ${destinationGarrison} troops can be received")
+                        Button(
+                            enabled = garrisonActionsEnabled && destinationGarrison > 0,
+                            onClick = { onTransferGarrison(destination.id, destinationGarrison) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Transfer up to $destinationGarrison to ${destination.name}") }
+                    }
                 }
             }
         }

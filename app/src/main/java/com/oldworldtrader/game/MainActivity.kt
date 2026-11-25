@@ -53,7 +53,6 @@ private fun OldWorldTraderApp() {
         CityData("del", "Delhi", "India", 1800, 8000, 25),
         CityData("bag", "Baghdad", "Iraq", 2000, 9000, 30)
     )) }
-    // Browsing a country is location state, not a change to the player's kingdom identity.
     var travelCountry by remember { mutableStateOf(cities.firstOrNull()?.country ?: selectedCountry) }
     var enemyKingdomState by remember { mutableStateOf(savedGame?.enemyKingdomState ?: EnemyKingdomState()) }
     var battleReports by remember { mutableStateOf(savedGame?.battleReports ?: emptyList()) }
@@ -119,20 +118,14 @@ private fun OldWorldTraderApp() {
                                     }
                                 }
                             }
-                            OutlinedTextField(
-                                cityName,
-                                onValueChange = { cityName = it },
-                                label = { Text("Name your new city") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            OutlinedTextField(cityName, onValueChange = { cityName = it },
+                                label = { Text("Name your new city") }, modifier = Modifier.fillMaxWidth())
                             Button(
                                 enabled = gold >= cityFoundingCost && EconomyLogic.canFoundCityName(cityName, cities),
                                 onClick = {
                                     gold -= cityFoundingCost
-                                    val newCity = CityData(
-                                        EconomyLogic.nextCityId(cities), cityName.trim(), selectedCountry,
-                                        300, cityFoundingCost, 10, true
-                                    )
+                                    val newCity = CityData(EconomyLogic.nextCityId(cities), cityName.trim(), selectedCountry,
+                                        300, cityFoundingCost, 10, true)
                                     cities = cities + newCity
                                     cityName = ""
                                     message = "New settlement founded for ${cityFoundingCost} gold. Kingdom rank: ${kingdomSnapshot.currentRank.title}."
@@ -146,6 +139,10 @@ private fun OldWorldTraderApp() {
                                 upgradeDiscountPercent = ResearchSystem.buildingUpgradeDiscountPercent(researchState),
                                 garrison = cityGarrisons[current.id] ?: 0,
                                 fieldArmy = army,
+                                otherOwnedCities = WorldTurnSystem.migrateOwnership(cities).filter {
+                                    it.id != current.id && CityGarrisonSystem.isPlayerControlled(it)
+                                },
+                                garrisonActionsEnabled = !fleetState.isAtSea,
                                 onStation = { amount ->
                                     val result = CityGarrisonSystem.station(army, cityGarrisons[current.id] ?: 0, amount, current)
                                     if (result.success) {
@@ -166,12 +163,27 @@ private fun OldWorldTraderApp() {
                                     }
                                     message = result.message
                                 },
+                                onTransferGarrison = { destinationId, amount ->
+                                    if (fleetState.isAtSea) {
+                                        message = "Garrison transfers are unavailable while your fleet is at sea."
+                                    } else {
+                                        val result = CityGarrisonSystem.transfer(
+                                            cityGarrisons, cities, current.id, destinationId, amount
+                                        )
+                                        if (result.success) cityGarrisons = result.garrisons
+                                        message = result.message
+                                    }
+                                },
                                 onUpgrade = { spec ->
-                                    val reason = CityDashboardRules.upgradeBlockReason(current, spec, gold, ResearchSystem.buildingUpgradeDiscountPercent(researchState))
+                                    val reason = CityDashboardRules.upgradeBlockReason(current, spec, gold,
+                                        ResearchSystem.buildingUpgradeDiscountPercent(researchState))
                                     if (reason != null) {
                                         message = reason
                                     } else {
-                                        val cost = ResearchSystem.applyDiscount(EconomyLogic.upgradeCost(spec, current.buildings[spec.name] ?: 0), ResearchSystem.buildingUpgradeDiscountPercent(researchState))
+                                        val cost = ResearchSystem.applyDiscount(
+                                            EconomyLogic.upgradeCost(spec, current.buildings[spec.name] ?: 0),
+                                            ResearchSystem.buildingUpgradeDiscountPercent(researchState)
+                                        )
                                         val updated = EconomyLogic.applyUpgrade(current, spec)
                                         gold -= cost
                                         cities = cities.map { if (it.id == updated.id) updated else it }
@@ -186,21 +198,17 @@ private fun OldWorldTraderApp() {
                     }
                     1 -> {
                         Text("CITY TRAVEL", fontWeight = FontWeight.Bold)
-                        if (fleetState.isAtSea) {
-                            Text("City travel is unavailable while your fleet is at sea. Complete the voyage first.")
-                        }
+                        if (fleetState.isAtSea) Text("City travel is unavailable while your fleet is at sea. Complete the voyage first.")
                         cities.forEach { c ->
                             val visit = CityTravelSystem.visit(c, fleetState.isAtSea)
                             Button(
                                 enabled = visit.success,
                                 onClick = {
                                     val action = CityTravelSystem.visit(c, fleetState.isAtSea)
-                                    if (action.success) {
-                                        action.cityId?.let { cityId ->
-                                            selectedCityId = cityId
-                                            marketCityId = cityId
-                                            tab = 0
-                                        }
+                                    if (action.success) action.cityId?.let { cityId ->
+                                        selectedCityId = cityId
+                                        marketCityId = cityId
+                                        tab = 0
                                     }
                                     message = action.message
                                 },
@@ -210,9 +218,8 @@ private fun OldWorldTraderApp() {
                     }
                     2 -> {
                         Text("COUNTRY TRAVEL", fontWeight = FontWeight.Bold)
-                        val countries = CountryTravelSystem.knownCountries(
-                            cities, listOf("Egypt", "Italy", "Oman", "India", "Iraq", "Ottoman Empire", "Persia")
-                        )
+                        val countries = CountryTravelSystem.knownCountries(cities,
+                            listOf("Egypt", "Italy", "Oman", "India", "Iraq", "Ottoman Empire", "Persia"))
                         countries.forEach { country ->
                             Button(onClick = {
                                 travelCountry = country
@@ -223,9 +230,8 @@ private fun OldWorldTraderApp() {
                         }
                         Text("Selected country: $travelCountry")
                         val destinations = CountryTravelSystem.citiesInCountry(cities, travelCountry)
-                        if (destinations.isEmpty()) {
-                            Text("No known cities in $travelCountry yet.")
-                        } else {
+                        if (destinations.isEmpty()) Text("No known cities in $travelCountry yet.")
+                        else {
                             Text("CITIES • $travelCountry", fontWeight = FontWeight.Bold)
                             destinations.forEach { destination ->
                                 val visit = CityTravelSystem.visit(destination, fleetState.isAtSea)
@@ -233,17 +239,15 @@ private fun OldWorldTraderApp() {
                                     enabled = visit.success,
                                     onClick = {
                                         val action = CityTravelSystem.visit(destination, fleetState.isAtSea)
-                                        if (action.success) {
-                                            action.cityId?.let { cityId ->
-                                                selectedCityId = cityId
-                                                marketCityId = cityId
-                                                tab = 0
-                                            }
+                                        if (action.success) action.cityId?.let { cityId ->
+                                            selectedCityId = cityId
+                                            marketCityId = cityId
+                                            tab = 0
                                         }
                                         message = action.message
                                     },
                                     modifier = Modifier.fillMaxWidth()
-                                ) { Text("Enter " + destination.name + " • " + destination.country) }
+                                ) { Text("Enter ${destination.name} • ${destination.country}") }
                             }
                         }
                     }
@@ -257,17 +261,16 @@ private fun OldWorldTraderApp() {
                         Text("Cargo capacity: ${FleetSystem.cargoUsed(marketState.cargo)} / ${FleetSystem.selectedCapacity(fleetState) + ResearchSystem.cargoCapacityBonus(researchState)}")
                         if (fleetState.isAtSea) {
                             Text("Trading is locked while your ship is sailing.")
-                            Button(
-                                onClick = {
-                                    val action = FleetSystem.advanceVoyageDay(fleetState, gold)
-                                    if (action.success) {
-                                        fleetState = action.state
-                                        if (!action.state.isAtSea) marketCityId = action.state.currentPortId
-                                    }
-                                    message = action.message
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) { Text("Advance voyage day • ${fleetState.voyage?.remainingDays ?: 0} left") }
+                            Button(onClick = {
+                                val action = FleetSystem.advanceVoyageDay(fleetState, gold)
+                                if (action.success) {
+                                    fleetState = action.state
+                                    if (!action.state.isAtSea) marketCityId = action.state.currentPortId
+                                }
+                                message = action.message
+                            }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Advance voyage day • ${fleetState.voyage?.remainingDays ?: 0} left")
+                            }
                         } else {
                             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                 Button(onClick = { quantity = (quantity - 1).coerceAtLeast(1) }) { Text("−") }
@@ -275,76 +278,48 @@ private fun OldWorldTraderApp() {
                                 Button(onClick = { quantity = (quantity + 1).coerceAtMost(99) }) { Text("+") }
                             }
                             Text("YOUR CARGO", fontWeight = FontWeight.Bold)
-                            Text(EconomyLogic.goods.joinToString("  •  ") { good ->
-                                "${good.name}: ${marketState.cargoAmount(good.name)}"
-                            })
+                            Text(EconomyLogic.goods.joinToString("  •  ") { "${it.name}: ${marketState.cargoAmount(it.name)}" })
                             EconomyLogic.goods.forEach { good ->
-                                val stock = marketState.stock(marketCity.id, good.name)
                                 val factors = MarketSystem.factorsFor(good, marketCityIndex, year)
-                                val previousFactors = MarketSystem.factorsFor(
-                                    good, marketCityIndex, (year - 1).coerceAtLeast(1)
-                                )
+                                val previousFactors = MarketSystem.factorsFor(good, marketCityIndex, (year - 1).coerceAtLeast(1))
                                 val quote = MarketSystem.quote(
-                                    good = good,
-                                    cityIndex = marketCityIndex,
-                                    year = year,
-                                    stock = stock,
-                                    citySupplyFactor = factors.supplyFactor,
-                                    demandFactor = factors.demandFactor,
+                                    good = good, cityIndex = marketCityIndex, year = year,
+                                    stock = marketState.stock(marketCity.id, good.name),
+                                    citySupplyFactor = factors.supplyFactor, demandFactor = factors.demandFactor,
                                     previousCitySupplyFactor = previousFactors.supplyFactor,
-                                    previousDemandFactor = previousFactors.demandFactor,
-                                    eventLabel = factors.label
+                                    previousDemandFactor = previousFactors.demandFactor, eventLabel = factors.label
                                 )
                                 val saleQuote = quote.copy(price = ResearchSystem.salePrice(quote.price, researchState))
                                 val held = marketState.cargoAmount(good.name)
                                 val saleValue = saleQuote.price.toLong() * quantity.toLong()
                                 val capacity = FleetSystem.selectedCapacity(fleetState) + ResearchSystem.cargoCapacityBonus(researchState)
                                 val cargoFits = FleetSystem.canFitCargo(marketState.cargo, good.name, quantity, capacity)
-                                val canSellSafely = MarketSystem.canSell(held, quantity) &&
-                                    saleValue <= Int.MAX_VALUE.toLong() &&
+                                val canSellSafely = MarketSystem.canSell(held, quantity) && saleValue <= Int.MAX_VALUE.toLong() &&
                                     gold.toLong() + saleValue <= Int.MAX_VALUE.toLong()
                                 Card(Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         Text(good.name, fontWeight = FontWeight.Bold)
                                         Text("Buy: ${quote.price} gold • Sell: ${saleQuote.price} gold • ${quote.trendLabel} (${quote.trendPercent}%)")
                                         Text("Event: ${quote.eventLabel}")
-                                        Text(
-                                            MarketSystem.trendRiskLabel(quote.trendRisk),
+                                        Text(MarketSystem.trendRiskLabel(quote.trendRisk),
                                             color = when (quote.trendRisk) {
                                                 "High" -> Color(0xFFB3261E)
                                                 "Moderate" -> Color(0xFF9A6700)
                                                 else -> Color(0xFF1B5E20)
-                                            },
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                            }, fontWeight = FontWeight.Bold)
                                         Text("Port stock: ${quote.availableStock} • In cargo: $held")
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Button(
-                                                enabled = MarketSystem.canBuy(quote, quantity, gold) && cargoFits,
+                                            Button(enabled = MarketSystem.canBuy(quote, quantity, gold) && cargoFits,
                                                 onClick = {
-                                                    val transaction = marketState.buy(
-                                                        marketCity.id, good, quote, quantity, gold, cargoCapacity = capacity
-                                                    )
-                                                    if (transaction.success) {
-                                                        marketState = transaction.state
-                                                        gold = transaction.gold
-                                                        message = transaction.message
-                                                    } else message = transaction.message
-                                                },
-                                                modifier = Modifier.weight(1f)
-                                            ) { Text("Buy") }
-                                            OutlinedButton(
-                                                enabled = canSellSafely,
-                                                onClick = {
-                                                    val transaction = marketState.sell(marketCity.id, good, saleQuote, quantity, gold)
-                                                    if (transaction.success) {
-                                                        marketState = transaction.state
-                                                        gold = transaction.gold
-                                                        message = transaction.message
-                                                    } else message = transaction.message
-                                                },
-                                                modifier = Modifier.weight(1f)
-                                            ) { Text("Sell") }
+                                                    val result = marketState.buy(marketCity.id, good, quote, quantity, gold, cargoCapacity = capacity)
+                                                    if (result.success) { marketState = result.state; gold = result.gold }
+                                                    message = result.message
+                                                }, modifier = Modifier.weight(1f)) { Text("Buy") }
+                                            OutlinedButton(enabled = canSellSafely, onClick = {
+                                                val result = marketState.sell(marketCity.id, good, saleQuote, quantity, gold)
+                                                if (result.success) { marketState = result.state; gold = result.gold }
+                                                message = result.message
+                                            }, modifier = Modifier.weight(1f)) { Text("Sell") }
                                         }
                                     }
                                 }
@@ -353,44 +328,28 @@ private fun OldWorldTraderApp() {
                         Text("Prices reflect port, year, stock and deterministic supply/demand events. Trading is only available at your current port.")
                     }
                     4 -> {
-                        ShopDashboard(
-                            cities = cities,
-                            selectedCityId = shopCityId,
-                            gold = gold,
-                            year = year,
-                            shopState = shopState,
-                            marketState = marketState,
-                            onCitySelected = { shopCityId = it },
+                        ShopDashboard(cities = cities, selectedCityId = shopCityId, gold = gold, year = year,
+                            shopState = shopState, marketState = marketState, onCitySelected = { shopCityId = it },
                             onOpenShop = { cityId, cityOwned ->
-                                val transaction = shopState.openShop(cityId, cityOwned, gold, marketState.cargo)
-                                if (transaction.success) {
-                                    shopState = transaction.state
-                                    gold = transaction.gold
-                                }
-                                message = transaction.message
+                                val result = shopState.openShop(cityId, cityOwned, gold, marketState.cargo)
+                                if (result.success) { shopState = result.state; gold = result.gold }
+                                message = result.message
                             },
                             onStock = { cityId, goodName, amount ->
-                                val transaction = shopState.stockFromCargo(cityId, goodName, amount, marketState.cargo, gold)
-                                if (transaction.success) {
-                                    shopState = transaction.state
-                                    marketState = marketState.copy(cargo = transaction.cargo)
-                                }
-                                message = transaction.message
+                                val result = shopState.stockFromCargo(cityId, goodName, amount, marketState.cargo, gold)
+                                if (result.success) { shopState = result.state; marketState = marketState.copy(cargo = result.cargo) }
+                                message = result.message
                             },
                             onCustomerSale = { cityId, goodName, amount, retailPrice ->
-                                val transaction = shopState.sellToCustomers(cityId, goodName, amount, retailPrice, gold, marketState.cargo)
-                                if (transaction.success) shopState = transaction.state
-                                message = transaction.message
+                                val result = shopState.sellToCustomers(cityId, goodName, amount, retailPrice, gold, marketState.cargo)
+                                if (result.success) shopState = result.state
+                                message = result.message
                             },
                             onCollectCash = { cityId ->
-                                val transaction = shopState.collectCash(cityId, gold, marketState.cargo)
-                                if (transaction.success) {
-                                    shopState = transaction.state
-                                    gold = transaction.gold
-                                }
-                                message = transaction.message
-                            }
-                        )
+                                val result = shopState.collectCash(cityId, gold, marketState.cargo)
+                                if (result.success) { shopState = result.state; gold = result.gold }
+                                message = result.message
+                            })
                     }
                     5 -> {
                         Text("ARMY & DEFENSE", fontWeight = FontWeight.Bold)
@@ -399,64 +358,47 @@ private fun OldWorldTraderApp() {
                         val recruit10Cost = ResearchSystem.recruitCost(100, researchState)
                         val recruit60Cost = ResearchSystem.recruitCost(500, researchState)
                         if (fleetState.isAtSea) Text("Recruiting and attacks are unavailable while your fleet is at sea.")
-                        Button(
-                            enabled = !fleetState.isAtSea && gold >= recruit10Cost && army <= Int.MAX_VALUE - 10,
+                        Button(enabled = !fleetState.isAtSea && gold >= recruit10Cost && army <= Int.MAX_VALUE - 10,
                             onClick = {
                                 val result = ArmySystem.recruit(army, gold, 10, recruit10Cost)
                                 if (result.success) { army = result.army; gold = result.gold }
                                 message = result.message
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text("Recruit 10 • ${recruit10Cost} gold") }
-                        Button(
-                            enabled = !fleetState.isAtSea && gold >= recruit60Cost && army <= Int.MAX_VALUE - 60,
+                            }, modifier = Modifier.fillMaxWidth()) { Text("Recruit 10 • $recruit10Cost gold") }
+                        Button(enabled = !fleetState.isAtSea && gold >= recruit60Cost && army <= Int.MAX_VALUE - 60,
                             onClick = {
                                 val result = ArmySystem.recruit(army, gold, 60, recruit60Cost)
                                 if (result.success) { army = result.army; gold = result.gold }
                                 message = result.message
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text("Recruit 60 • ${recruit60Cost} gold") }
-                        WorldTurnSystem.migrateOwnership(cities).filter { it.owned && it.controlledBy == WorldTurnSystem.PLAYER_FACTION }.forEach { ownedCity ->
+                            }, modifier = Modifier.fillMaxWidth()) { Text("Recruit 60 • $recruit60Cost gold") }
+                        WorldTurnSystem.migrateOwnership(cities).filter(CityGarrisonSystem::isPlayerControlled).forEach { ownedCity ->
                             val stationed = cityGarrisons[ownedCity.id] ?: 0
                             Text("Defense • ${ownedCity.name}: ${ArmySystem.cityDefense(ownedCity) + stationed} (Garrison $stationed)")
                         }
                         cities.filter { !it.owned }.forEach { target ->
                             val defense = ArmySystem.cityDefense(target)
                             val required = ArmySystem.minimumAttackForce(target)
-                            Button(
-                                enabled = !fleetState.isAtSea && army >= 10,
-                                onClick = {
-                                    val battle = ArmySystem.attack(army, target)
-                                    if (battle.valid) {
-                                        val armyBefore = army
-                                        army = battle.remainingArmy
-                                        battle.capturedCity?.let { captured ->
-                                            cities = cities.map { if (it.id == target.id) captured else it }
-                                        }
-                                        ArmySystem.playerSiegeReport(selectedCountry, target, armyBefore, battle)?.let { report ->
-                                            battleReports = (battleReports + report).takeLast(30)
-                                        }
+                            Button(enabled = !fleetState.isAtSea && army >= 10, onClick = {
+                                val battle = ArmySystem.attack(army, target)
+                                if (battle.valid) {
+                                    val before = army
+                                    army = battle.remainingArmy
+                                    battle.capturedCity?.let { captured -> cities = cities.map { if (it.id == target.id) captured else it } }
+                                    ArmySystem.playerSiegeReport(selectedCountry, target, before, battle)?.let { report ->
+                                        battleReports = (battleReports + report).takeLast(30)
                                     }
-                                    message = battle.message
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) { Text("Attack ${target.name} • Defense $defense • Need $required troops") }
+                                }
+                                message = battle.message
+                            }, modifier = Modifier.fillMaxWidth()) {
+                                Text("Attack ${target.name} • Defense $defense • Need $required troops")
+                            }
                         }
                     }
                     6 -> {
-                        FleetDashboard(
-                            cities = cities,
-                            fleetState = fleetState,
-                            gold = gold,
-                            cargo = marketState.cargo,
+                        FleetDashboard(cities = cities, fleetState = fleetState, gold = gold, cargo = marketState.cargo,
                             cargoCapacityBonus = ResearchSystem.cargoCapacityBonus(researchState),
                             onPurchase = { shipId ->
                                 val action = FleetSystem.purchase(fleetState, shipId, gold)
-                                if (action.success) {
-                                    fleetState = action.state
-                                    gold = action.gold
-                                }
+                                if (action.success) { fleetState = action.state; gold = action.gold }
                                 message = action.message
                             },
                             onSelectShip = { shipId ->
@@ -466,10 +408,7 @@ private fun OldWorldTraderApp() {
                             },
                             onDepart = { routeId ->
                                 val action = FleetSystem.depart(fleetState, routeId, gold)
-                                if (action.success) {
-                                    fleetState = action.state
-                                    gold = action.gold
-                                }
+                                if (action.success) { fleetState = action.state; gold = action.gold }
                                 message = action.message
                             },
                             onAdvanceDay = {
@@ -482,13 +421,9 @@ private fun OldWorldTraderApp() {
                             },
                             onUpgradeShip = { shipId ->
                                 val action = FleetSystem.upgradeShip(fleetState, shipId, gold)
-                                if (action.success) {
-                                    fleetState = action.state
-                                    gold = action.gold
-                                }
+                                if (action.success) { fleetState = action.state; gold = action.gold }
                                 message = action.message
-                            }
-                        )
+                            })
                     }
                     7 -> {
                         val metrics = kingdomSnapshot.metrics
@@ -498,7 +433,7 @@ private fun OldWorldTraderApp() {
                                 Text("KINGDOM PROGRESSION", fontWeight = FontWeight.Bold)
                                 Text("Current rank: ${kingdomSnapshot.currentRank.title}", style = MaterialTheme.typography.titleMedium)
                                 Text("Settlement founding discount: ${kingdomSnapshot.currentRank.foundingDiscountPercent}%")
-                                Text("Current city founding cost: ${cityFoundingCost} gold")
+                                Text("Current city founding cost: $cityFoundingCost gold")
                                 Text("Owned cities: ${metrics.ownedCities}")
                                 Text("Owned population: ${metrics.ownedPopulation}")
                                 Text("Building levels: ${metrics.ownedBuildingLevels}")
@@ -514,69 +449,51 @@ private fun OldWorldTraderApp() {
                                     Text("Population: ${metrics.ownedPopulation} / ${next.populationRequired}")
                                     Text("Building levels: ${metrics.ownedBuildingLevels} / ${next.buildingLevelsRequired}")
                                     Text("Reach all three targets to unlock the next founding discount.")
-                                } else {
-                                    Text("Maximum kingdom rank reached. Your realm is an empire.")
-                                }
+                                } else Text("Maximum kingdom rank reached. Your realm is an empire.")
                             }
                         }
                     }
-                    8 -> {
-                        ResearchDashboard(
-                            state = researchState,
-                            gold = gold,
-                            ownedPopulation = kingdomSnapshot.metrics.ownedPopulation,
-                            onResearch = { techId ->
-                                val action = ResearchSystem.research(researchState, techId, gold, kingdomSnapshot.metrics.ownedPopulation)
-                                if (action.success) {
-                                    researchState = action.state
-                                    gold = action.gold
-                                }
-                                message = action.message
-                            }
-                        )
-                    }
-                    9 -> {
-                        BattleReportScreen(
-                            reports = battleReports,
-                            onSelectCity = { cityId ->
-                                selectedCityId = cityId
-                                tab = 0
-                            }
-                        )
-                    }
+                    8 -> ResearchDashboard(state = researchState, gold = gold,
+                        ownedPopulation = kingdomSnapshot.metrics.ownedPopulation,
+                        onResearch = { techId ->
+                            val action = ResearchSystem.research(researchState, techId, gold, kingdomSnapshot.metrics.ownedPopulation)
+                            if (action.success) { researchState = action.state; gold = action.gold }
+                            message = action.message
+                        })
+                    9 -> BattleReportScreen(reports = battleReports, onSelectCity = { cityId ->
+                        selectedCityId = cityId
+                        tab = 0
+                    })
                 }
-                Button(
-                    onClick = {
-                        if (year == Int.MAX_VALUE) {
-                            message = "Maximum year reached."
-                        } else {
-                            year += 1
-                            marketState = marketState.restockYearly()
-                            val grownCities = WorldTurnSystem.migrateOwnership(cities.map { city ->
-                                if (city.owned && (city.controlledBy == null || city.controlledBy == WorldTurnSystem.PLAYER_FACTION)) city.copy(
-                                    population = (city.population.toLong() + CityDashboardRules.annualGrowth(city).toLong())
-                                        .coerceAtMost(CityGrowthSystem.populationCapacity(city).toLong())
-                                        .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                                ) else city
-                            })
-                            val enemyTurn = WorldTurnSystem.enemyTurn(enemyKingdomState, grownCities, year, selectedCountry, cityGarrisons)
-                            enemyKingdomState = enemyTurn.state
-                            cities = enemyTurn.cities
-                            cityGarrisons = enemyTurn.cityGarrisons
-                            battleReports = (battleReports + enemyTurn.reports).takeLast(30)
-                            val income = WorldTurnSystem.kingdomIncome(enemyTurn.cities)
-                            val cityUpkeep = WorldTurnSystem.kingdomCityUpkeep(enemyTurn.cities)
-                            val garrisonUpkeep = CityGarrisonSystem.total(cityGarrisons)
-                            val annualSettlement = ArmySystem.settleYear(army, gold, income.toLong(), cityUpkeep.toLong(), garrisonUpkeep)
-                            gold = annualSettlement.gold
-                            army = annualSettlement.army
-                            cityGarrisons = CityGarrisonSystem.applyDesertions(cityGarrisons, annualSettlement.garrisonDesertions)
-                            val enemySummary = enemyTurn.reports.joinToString(" ") { it.summary }
-                            message = if (enemySummary.isBlank()) annualSettlement.message else "${annualSettlement.message} $enemySummary"
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Advance Year") }
+                Button(onClick = {
+                    if (year == Int.MAX_VALUE) {
+                        message = "Maximum year reached."
+                    } else {
+                        year += 1
+                        marketState = marketState.restockYearly()
+                        val grownCities = WorldTurnSystem.migrateOwnership(cities.map { city ->
+                            if (city.owned && (city.controlledBy == null || city.controlledBy == WorldTurnSystem.PLAYER_FACTION)) city.copy(
+                                population = (city.population.toLong() + CityDashboardRules.annualGrowth(city).toLong())
+                                    .coerceAtMost(CityGrowthSystem.populationCapacity(city).toLong())
+                                    .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                            ) else city
+                        })
+                        val enemyTurn = WorldTurnSystem.enemyTurn(enemyKingdomState, grownCities, year, selectedCountry, cityGarrisons)
+                        enemyKingdomState = enemyTurn.state
+                        cities = enemyTurn.cities
+                        cityGarrisons = enemyTurn.cityGarrisons
+                        battleReports = (battleReports + enemyTurn.reports).takeLast(30)
+                        val income = WorldTurnSystem.kingdomIncome(enemyTurn.cities)
+                        val cityUpkeep = WorldTurnSystem.kingdomCityUpkeep(enemyTurn.cities)
+                        val garrisonUpkeep = CityGarrisonSystem.total(cityGarrisons)
+                        val settlement = ArmySystem.settleYear(army, gold, income.toLong(), cityUpkeep.toLong(), garrisonUpkeep)
+                        gold = settlement.gold
+                        army = settlement.army
+                        cityGarrisons = CityGarrisonSystem.applyDesertions(cityGarrisons, settlement.garrisonDesertions)
+                        val enemySummary = enemyTurn.reports.joinToString(" ") { it.summary }
+                        message = if (enemySummary.isBlank()) settlement.message else "${settlement.message} $enemySummary"
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Advance Year") }
             }
         }
     }

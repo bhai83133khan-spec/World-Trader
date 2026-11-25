@@ -1,9 +1,16 @@
 package com.oldworldtrader.game
 
- data class GarrisonTransferResult(
+data class GarrisonTransferResult(
     val success: Boolean,
     val fieldArmy: Int,
     val garrison: Int,
+    val transferred: Int,
+    val message: String
+)
+
+data class GarrisonRelocationResult(
+    val success: Boolean,
+    val garrisons: Map<String, Int>,
     val transferred: Int,
     val message: String
 )
@@ -37,6 +44,51 @@ object CityGarrisonSystem {
         val roomInFieldArmy = Int.MAX_VALUE.toLong() - fieldArmy.toLong()
         return minOf(garrison.toLong(), roomInFieldArmy.coerceAtLeast(0L))
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    /** Maximum soldiers transferable into this city while respecting both garrisons' validity and capacity. */
+    fun maxTransferable(cityGarrison: Int, destinationGarrison: Int, destination: CityData): Int {
+        if (cityGarrison <= 0 || destinationGarrison < 0 || !isPlayerControlled(destination)) return 0
+        val destinationCapacity = capacity(destination)
+        if (destinationGarrison > destinationCapacity) return 0
+        return minOf(cityGarrison.toLong(), destinationCapacity.toLong() - destinationGarrison.toLong())
+            .coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    /** Move troops between two player-controlled city garrisons as one immutable transaction. */
+    fun transfer(
+        garrisons: Map<String, Int>,
+        cities: List<CityData>,
+        fromCityId: String,
+        toCityId: String,
+        amount: Int
+    ): GarrisonRelocationResult {
+        if (fromCityId.isBlank() || toCityId.isBlank() || fromCityId == toCityId || amount <= 0) {
+            return rejectRelocation(garrisons, "Invalid garrison transfer.")
+        }
+        val source = cities.firstOrNull { it.id == fromCityId }
+            ?: return rejectRelocation(garrisons, "Source city not found.")
+        val destination = cities.firstOrNull { it.id == toCityId }
+            ?: return rejectRelocation(garrisons, "Destination city not found.")
+        if (!isPlayerControlled(source) || !isPlayerControlled(destination)) {
+            return rejectRelocation(garrisons, "You must control both cities to transfer troops.")
+        }
+        val sourceCount = garrisons[fromCityId] ?: 0
+        val destinationCount = garrisons[toCityId] ?: 0
+        if (sourceCount < 0 || destinationCount < 0 || sourceCount > capacity(source) || destinationCount > capacity(destination)) {
+            return rejectRelocation(garrisons, "Garrison state exceeds a city's capacity.")
+        }
+        if (sourceCount < amount) return rejectRelocation(garrisons, "Only $sourceCount soldiers are stationed in ${source.name}.")
+        val availableCapacity = capacity(destination).toLong() - destinationCount.toLong()
+        if (amount.toLong() > availableCapacity) {
+            return rejectRelocation(garrisons, "${destination.name} can receive only ${availableCapacity.coerceAtLeast(0L)} soldiers.")
+        }
+        val updated = garrisons.toMutableMap()
+        val remaining = sourceCount - amount
+        if (remaining == 0) updated.remove(fromCityId) else updated[fromCityId] = remaining
+        updated[toCityId] = destinationCount + amount
+        return GarrisonRelocationResult(true, updated.toMap(), amount,
+            "$amount soldiers transferred from ${source.name} to ${destination.name}.")
     }
 
     fun station(fieldArmy: Int, garrison: Int, amount: Int, city: CityData): GarrisonTransferResult {
@@ -93,4 +145,7 @@ object CityGarrisonSystem {
 
     private fun reject(fieldArmy: Int, garrison: Int, message: String) =
         GarrisonTransferResult(false, fieldArmy, garrison, 0, message)
+
+    private fun rejectRelocation(garrisons: Map<String, Int>, message: String) =
+        GarrisonRelocationResult(false, garrisons, 0, message)
 }

@@ -6,8 +6,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CityGarrisonSystemTest {
-    private fun city(owned: Boolean = true, barracks: Int = 0, controller: String? = null) =
-        CityData("alex", "Alexandria", "Egypt", 1_000, 2_000, 20, owned = owned,
+    private fun city(id: String = "alex", owned: Boolean = true, barracks: Int = 0, controller: String? = null) =
+        CityData(id, if (id == "alex") "Alexandria" else "Venice", "Egypt", 1_000, 2_000, 20, owned = owned,
             buildings = mutableMapOf("Army Barracks" to barracks), controlledBy = controller)
 
     @Test
@@ -33,6 +33,37 @@ class CityGarrisonSystemTest {
         assertEquals(0, CityGarrisonSystem.maxWithdrawable(Int.MAX_VALUE, 30, city()))
         assertEquals(0, CityGarrisonSystem.maxWithdrawable(-1, 30, city()))
         assertEquals(0, CityGarrisonSystem.maxWithdrawable(0, 30, city(controller = "Rival")))
+    }
+
+    @Test
+    fun transferMovesTroopsBetweenControlledCitiesWithoutChangingTotal() {
+        val alex = city("alex", barracks = 1)
+        val venice = city("ven", barracks = 1)
+        val original = mapOf("alex" to 60, "ven" to 20)
+        val result = CityGarrisonSystem.transfer(original, listOf(alex, venice), "alex", "ven", 30)
+
+        assertTrue(result.success)
+        assertEquals(30, result.transferred)
+        assertEquals(mapOf("alex" to 30, "ven" to 50), result.garrisons)
+        assertEquals(CityGarrisonSystem.total(original), CityGarrisonSystem.total(result.garrisons))
+    }
+
+    @Test
+    fun transferRejectsOwnershipCapacityAmountsAndInvalidStateWithoutMutation() {
+        val home = city("alex", barracks = 1)
+        val destination = city("ven")
+        val rival = destination.copy(owned = true, controlledBy = "Rival")
+        val original = mapOf("alex" to 60, "ven" to 95)
+        val cities = listOf(home, destination)
+
+        assertFalse(CityGarrisonSystem.transfer(original, cities, "alex", "alex", 1).success)
+        assertFalse(CityGarrisonSystem.transfer(original, cities, "alex", "missing", 1).success)
+        assertFalse(CityGarrisonSystem.transfer(original, listOf(home, rival), "alex", "ven", 1).success)
+        assertFalse(CityGarrisonSystem.transfer(original, cities, "alex", "ven", 6).success)
+        assertFalse(CityGarrisonSystem.transfer(original, cities, "alex", "ven", 61).success)
+        assertFalse(CityGarrisonSystem.transfer(original, cities, "alex", "ven", 0).success)
+        assertFalse(CityGarrisonSystem.transfer(mapOf("alex" to 151, "ven" to 0), cities, "alex", "ven", 1).success)
+        assertEquals(mapOf("alex" to 60, "ven" to 95), original)
     }
 
     @Test
@@ -102,7 +133,6 @@ class CityGarrisonSystemTest {
         val original = mapOf("ven" to 20, "alex" to 30, "bag" to 10)
         assertEquals(mapOf("alex" to 5, "ven" to 20, "bag" to 10),
             CityGarrisonSystem.applyDesertions(original, 25))
-        assertEquals(mapOf("bag" to 10),
-            CityGarrisonSystem.applyDesertions(original, 50))
+        assertEquals(mapOf("bag" to 10), CityGarrisonSystem.applyDesertions(original, 50))
     }
 }
