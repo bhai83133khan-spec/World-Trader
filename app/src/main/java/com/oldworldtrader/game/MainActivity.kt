@@ -32,7 +32,10 @@ private fun OldWorldTraderApp() {
     var tab by remember { mutableIntStateOf(0) }
     var selectedCityId by remember { mutableStateOf<String?>(null) }
     var fleetState by remember { mutableStateOf(savedGame?.fleetState ?: FleetState()) }
-    var marketCityId by remember { mutableStateOf(savedGame?.fleetState?.currentPortId ?: "alex") }
+    val savedMarketCityId = savedGame?.let { state ->
+        CityTravelSystem.restoreMarketCityId(state.marketCityId, state.cities, state.fleetState.currentPortId)
+    }
+    var marketCityId by remember { mutableStateOf(savedMarketCityId ?: "alex") }
     var marketState by remember { mutableStateOf(savedGame?.marketState ?: MarketState()) }
     var shopState by remember { mutableStateOf(savedGame?.shopState ?: ShopState()) }
     var shopCityId by remember { mutableStateOf(savedGame?.cities?.firstOrNull()?.id ?: "alex") }
@@ -49,8 +52,22 @@ private fun OldWorldTraderApp() {
         CityData("del", "Delhi", "India", 1800, 8000, 25),
         CityData("bag", "Baghdad", "Iraq", 2000, 9000, 30)
     )) }
-    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState, researchState) {
-        GameSaveStore.save(context, SavedGameState(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState, researchState))
+    LaunchedEffect(gold, year, army, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId) {
+        GameSaveStore.save(
+            context,
+            SavedGameState(
+                gold = gold,
+                year = year,
+                army = army,
+                selectedCountry = selectedCountry,
+                cities = cities,
+                marketState = marketState,
+                shopState = shopState,
+                fleetState = fleetState,
+                researchState = researchState,
+                marketCityId = marketCityId
+            )
+        )
     }
 
     val current = cities.firstOrNull { it.id == selectedCityId }
@@ -138,11 +155,26 @@ private fun OldWorldTraderApp() {
                     }
                     1 -> {
                         Text("CITY TRAVEL", fontWeight = FontWeight.Bold)
+                        if (fleetState.isAtSea) {
+                            Text("City travel is unavailable while your fleet is at sea. Complete the voyage first.")
+                        }
                         cities.forEach { c ->
-                            Button(onClick = {
-                                selectedCityId = c.id
-                                message = "Travelled to ${c.name}"
-                            }, modifier = Modifier.fillMaxWidth()) { Text("${c.name} • ${c.country}") }
+                            val visit = CityTravelSystem.visit(c, fleetState.isAtSea)
+                            Button(
+                                enabled = visit.success,
+                                onClick = {
+                                    val action = CityTravelSystem.visit(c, fleetState.isAtSea)
+                                    if (action.success) {
+                                        action.cityId?.let { cityId ->
+                                            selectedCityId = cityId
+                                            marketCityId = cityId
+                                            tab = 0
+                                        }
+                                    }
+                                    message = action.message
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Visit ${c.name} • ${c.country}") }
                         }
                     }
                     2 -> {
@@ -158,6 +190,10 @@ private fun OldWorldTraderApp() {
                     3 -> {
                         Text("MARKET • ${marketCity.name}", fontWeight = FontWeight.Bold)
                         Text("Trading port: ${marketCity.name}")
+                        if (!fleetState.isAtSea && marketCityId != fleetState.currentPortId) {
+                            val fleetPortName = cities.firstOrNull { it.id == fleetState.currentPortId }?.name ?: fleetState.currentPortId
+                            Text("Visited market • Fleet remains docked at $fleetPortName")
+                        }
                         Text("Cargo capacity: ${FleetSystem.cargoUsed(marketState.cargo)} / ${FleetSystem.selectedCapacity(fleetState) + ResearchSystem.cargoCapacityBonus(researchState)}")
                         if (fleetState.isAtSea) {
                             Text("Trading is locked while your ship is sailing.")
