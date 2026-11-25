@@ -27,6 +27,16 @@ class CityGarrisonSystemTest {
     }
 
     @Test
+    fun transferPreviewRespectsAlreadyStationedTroopsAtDestination() {
+        val destination = city("ven")
+        assertEquals(5, CityGarrisonSystem.maxTransferable(60, 95, destination))
+        assertEquals(0, CityGarrisonSystem.maxTransferable(60, 100, destination))
+        assertEquals(0, CityGarrisonSystem.maxTransferable(60, 101, destination))
+        assertEquals(0, CityGarrisonSystem.maxTransferable(60, -1, destination))
+    }
+
+
+    @Test
     fun maxWithdrawalAllowsPartialTransferAtFieldArmyIntegerLimit() {
         assertEquals(30, CityGarrisonSystem.maxWithdrawable(20, 30, city()))
         assertEquals(5, CityGarrisonSystem.maxWithdrawable(Int.MAX_VALUE - 5, 30, city()))
