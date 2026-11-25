@@ -85,6 +85,7 @@ object FleetSystem {
 
     fun purchase(state: FleetState, shipId: String, gold: Int): FleetAction {
         val ship = shipById(shipId) ?: return rejected(state, gold, "Unknown ship.")
+        if (state.isAtSea) return rejected(state, gold, "You cannot buy ships while at sea.")
         if (gold < 0) return rejected(state, gold, "Invalid wallet.")
         if (ship.id in state.ownedShipIds) return rejected(state, gold, "You already own this ship.")
         if (gold < ship.purchaseCost) return rejected(state, gold, "Need ${ship.purchaseCost} gold to buy ${ship.name}.")
@@ -122,6 +123,9 @@ object FleetSystem {
 
     fun advanceVoyageDay(state: FleetState, gold: Int): FleetAction {
         val voyage = state.voyage ?: return rejected(state, gold, "No active voyage.")
+        val route = routes.firstOrNull { it.id == voyage.routeId && it.fromPortId == state.currentPortId && it.toPortId == voyage.destinationPortId }
+            ?: return rejected(state, gold, "Invalid voyage route.")
+        if (voyage.remainingDays !in 1..route.travelDays) return rejected(state, gold, "Invalid voyage progress.")
         if (voyage.remainingDays > 1) {
             val updated = voyage.copy(remainingDays = voyage.remainingDays - 1)
             return FleetAction(state.copy(voyage = updated), gold, true, "At sea: ${updated.remainingDays} day(s) remaining.")
@@ -142,8 +146,8 @@ object FleetSystem {
         voyage: Voyage?
     ): FleetState {
         val fallback = FleetState()
-        val owned = ownedShipIds.orEmpty().filter { shipById(it) != null }.toSet().ifEmpty { fallback.ownedShipIds }
-        val selected = selectedShipId?.takeIf { it in owned } ?: owned.first()
+        val owned = ships.map { it.id }.filter { it in ownedShipIds.orEmpty() }.toSet().ifEmpty { fallback.ownedShipIds }
+        val selected = selectedShipId?.takeIf { it in owned } ?: ships.first { it.id in owned }.id
         val port = currentPortId?.takeIf { it in portIds } ?: fallback.currentPortId
         val route = voyage?.let { candidate -> routes.firstOrNull { it.id == candidate.routeId } }
         val safeVoyage = voyage?.takeIf { candidate ->
