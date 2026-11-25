@@ -121,7 +121,7 @@ private fun OldWorldTraderApp() {
                                 onClick = {
                                     gold -= cityFoundingCost
                                     val newCity = CityData(
-                                        "city${cities.size + 1}", cityName.trim(), selectedCountry,
+                                        EconomyLogic.nextCityId(cities), cityName.trim(), selectedCountry,
                                         300, cityFoundingCost, 10, true
                                     )
                                     cities = cities + newCity

@@ -56,6 +56,21 @@ object EconomyLogic {
         )
     }
 
+    /** Generate a collision-free settlement ID without relying on list size or reusing numeric IDs. */
+    fun nextCityId(cities: List<CityData>): String {
+        val usedIds = cities.map { it.id }.toSet()
+        val highestSuffix = usedIds.asSequence()
+            .filter { it.startsWith("city") }
+            .mapNotNull { it.removePrefix("city").toLongOrNull() }
+            .maxOrNull() ?: 0L
+        var candidate = if (highestSuffix == Long.MAX_VALUE) 1L else highestSuffix + 1L
+        while ("city$candidate" in usedIds) {
+            candidate = if (candidate == Long.MAX_VALUE) 1L else candidate + 1L
+        }
+        return "city$candidate"
+    }
+
+
     /** City names must be meaningful and unique within the player's settlements. */
     fun canFoundCityName(name: String, cities: List<CityData>): Boolean {
         val normalized = name.trim()
