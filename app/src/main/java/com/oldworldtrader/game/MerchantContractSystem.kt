@@ -3,17 +3,14 @@ package com.oldworldtrader.game
 /** Persisted completion markers prevent replaying deterministic contracts for duplicate rewards. */
 data class MerchantContractState(
     val year: Int = 0,
-    val completedContractIds: Set<String> = emptySet()
+    val completedContractIds: List<String> = emptyList()
 ) {
     fun forYear(currentYear: Int): MerchantContractState =
-        if (year == currentYear) copy(completedContractIds = boundedIds(completedContractIds))
+        if (year == currentYear) copy(completedContractIds = completedContractIds.filter(String::isNotBlank).takeLast(MAX_SAVED_COMPLETIONS))
         else MerchantContractState(year = currentYear)
 
     companion object {
         const val MAX_SAVED_COMPLETIONS = 100
-
-        private fun boundedIds(ids: Set<String>): Set<String> =
-            ids.asSequence().filter(String::isNotBlank).sorted().takeLast(MAX_SAVED_COMPLETIONS).toSet()
     }
 }
 
@@ -82,6 +79,8 @@ object MerchantContractSystem {
         ) return reject("Contract data is invalid.")
         if (contract.id in safeState.completedContractIds) return reject("This contract has already been completed.")
         if (currentPortId != contract.destinationPortId) return reject("Deliver this contract at ${contract.destinationPortId}.")
+        val activeOffer = board(contract.destinationPortId, year, safeState).firstOrNull { it.id == contract.id }
+        if (activeOffer != contract) return reject("This contract is not on the active board.")
         val carried = (cargo[contract.goodName] ?: 0).coerceAtLeast(0)
         if (carried < contract.quantity) return reject("Not enough ${contract.goodName} in cargo.")
         val payout = gold.toLong() + contract.rewardGold.toLong()
@@ -91,8 +90,8 @@ object MerchantContractSystem {
         val remaining = carried - contract.quantity
         if (remaining == 0) updatedCargo.remove(contract.goodName) else updatedCargo[contract.goodName] = remaining
         val updatedState = safeState.copy(completedContractIds =
-            (safeState.completedContractIds + contract.id).asSequence()
-                .filter(String::isNotBlank).sorted().takeLast(MerchantContractState.MAX_SAVED_COMPLETIONS).toSet())
+            (safeState.completedContractIds + contract.id).filter(String::isNotBlank)
+                .takeLast(MerchantContractState.MAX_SAVED_COMPLETIONS))
         return ContractResult(
             success = true,
             message = "Contract completed: delivered ${contract.quantity} ${contract.goodName}; earned ${contract.rewardGold} gold.",

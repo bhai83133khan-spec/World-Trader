@@ -53,12 +53,43 @@ class MerchantContractSystemTest {
     }
 
     @Test
+    fun forgedOfferTermsCannotChangeRewardOrCargoRequirement() {
+        val valid = MerchantContractSystem.board("alex", 1).first()
+        val cargo = mapOf(valid.goodName to valid.quantity)
+        val forged = valid.copy(rewardGold = valid.rewardGold + 1)
+        val result = MerchantContractSystem.complete(forged, "alex", 1, 500, cargo, MerchantContractState())
+        assertFalse(result.success)
+        assertEquals(500, result.gold)
+        assertEquals(cargo, result.cargo)
+        assertFalse(valid.id in result.state.completedContractIds)
+    }
+
+    @Test
+    fun completionHistoryKeepsMostRecentMarkers() {
+        val previous = (0 until MerchantContractState.MAX_SAVED_COMPLETIONS).map { "old-${it}" }
+        val state = MerchantContractState(year = 1, completedContractIds = previous)
+        val contract = MerchantContractSystem.board("alex", 1, state).first()
+        val cargo = mapOf(contract.goodName to contract.quantity)
+        val result = MerchantContractSystem.complete(contract, "alex", 1, 500, cargo, state)
+        assertTrue(result.success)
+        assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, result.state.completedContractIds.size)
+        assertTrue(contract.id in result.state.completedContractIds)
+        assertFalse("old-0" in result.state.completedContractIds)
+
+        val overLimit = (0 until 150).map { "contract-${it}" }
+        val normalized = MerchantContractState(year = 1, completedContractIds = overLimit).forYear(1)
+        assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, normalized.completedContractIds.size)
+        assertEquals((50 until 150).map { "contract-${it}" }, normalized.completedContractIds)
+    }
+
+    @Test
     fun completionRejectsOverflowAndMalformedContractsAtomically() {
-        val valid = MerchantContract("c1", "alex", "Wheat", 5, 100, "Deliver wheat")
-        val cargo = mapOf("Wheat" to 5)
-        val overflow = MerchantContractSystem.complete(valid, "alex", 1, Int.MAX_VALUE - 50, cargo, MerchantContractState())
+        val valid = MerchantContractSystem.board("alex", 1).first()
+        val cargo = mapOf(valid.goodName to valid.quantity)
+        val overflowGold = Int.MAX_VALUE - valid.rewardGold + 1
+        val overflow = MerchantContractSystem.complete(valid, "alex", 1, overflowGold, cargo, MerchantContractState())
         assertFalse(overflow.success)
-        assertEquals(Int.MAX_VALUE - 50, overflow.gold)
+        assertEquals(overflowGold, overflow.gold)
         assertEquals(cargo, overflow.cargo)
 
         assertFalse(MerchantContractSystem.complete(valid.copy(quantity = 0), "alex", 1, 100, cargo, MerchantContractState()).success)
@@ -66,11 +97,10 @@ class MerchantContractSystemTest {
     }
 
     @Test
-    fun completionMarkerStorageIsBoundedAndDeterministic() {
-        val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-$it" }.toSet()).forYear(3)
+    fun completionMarkerStorageKeepsRecentSequenceBounded() {
+        val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-$it" }).forYear(3)
         assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, state.completedContractIds.size)
-        assertTrue("contract-150" in state.completedContractIds)
-        assertFalse("contract-0" in state.completedContractIds)
+        assertEquals((51..150).map { "contract-$it" }, state.completedContractIds)
     }
 
     @Test
@@ -81,6 +111,6 @@ class MerchantContractSystemTest {
         assertTrue(result.success)
         assertTrue(MerchantContractSystem.board("alex", 2, result.state).isNotEmpty())
         assertTrue(MerchantContractSystem.board("alex", Int.MAX_VALUE).all { it.rewardGold > 0 })
-        assertEquals(MerchantContractState(year = 2), MerchantContractState(year = 1, completedContractIds = setOf("old")).forYear(2))
+        assertEquals(MerchantContractState(year = 2), MerchantContractState(year = 1, completedContractIds = listOf("old")).forYear(2))
     }
 }
