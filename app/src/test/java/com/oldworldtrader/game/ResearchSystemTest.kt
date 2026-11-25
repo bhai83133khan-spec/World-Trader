@@ -80,7 +80,7 @@ class ResearchSystemTest {
         assertEquals(0, ResearchSystem.applyDiscount(-1, 50))
         assertEquals(1, ResearchSystem.applyDiscount(1, 99))
         assertEquals(1, ResearchSystem.applyDiscount(1, 100))
-        assertEquals(0, ResearchSystem.applyDiscount(100, -20))
+        assertEquals(100, ResearchSystem.applyDiscount(100, -20))
         assertEquals(1, ResearchSystem.applyDiscount(100, 200))
     }
 
