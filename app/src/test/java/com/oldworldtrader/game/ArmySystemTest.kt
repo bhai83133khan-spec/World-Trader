@@ -207,4 +207,35 @@ class ArmySystemTest {
         assertEquals(0, result.upkeep)
         assertEquals(0, result.desertions)
     }
+
+    @Test
+    fun kingdomMilitarySummaryIncludesLegacyAndPlayerControlledCitiesOnly() {
+        val cities = listOf(
+            CityData("legacy", "Legacy", "Egypt", 500, 1_000, 10, owned = true,
+                buildings = mutableMapOf("Army Barracks" to 1, "Police Station" to 1)),
+            CityData("player", "Player City", "Italy", 500, 1_000, 15, owned = true,
+                controlledBy = WorldTurnSystem.PLAYER_FACTION),
+            CityData("unowned", "Unowned", "India", 500, 1_000, 900, owned = false),
+            CityData("rival", "Rival City", "Iraq", 500, 1_000, 900, owned = true,
+                controlledBy = "Rival")
+        )
+        val summary = ArmySystem.kingdomMilitarySummary(120, cities)
+
+        assertEquals(120L, summary.fieldArmy)
+        assertEquals(55L, summary.ownedCityDefense)
+        assertEquals(175L, summary.totalDefense)
+        assertEquals(2, summary.defendedCities)
+    }
+
+
+    @Test
+    fun kingdomMilitarySummaryClampsNegativeArmyAndKeepsDefenseInLongTotals() {
+        val summary = ArmySystem.kingdomMilitarySummary(-25, listOf(city(Int.MAX_VALUE, owned = true)))
+
+        assertEquals(0L, summary.fieldArmy)
+        assertEquals(Int.MAX_VALUE.toLong(), summary.ownedCityDefense)
+        assertEquals(Int.MAX_VALUE.toLong(), summary.totalDefense)
+        assertEquals(1, summary.defendedCities)
+    }
+
 }

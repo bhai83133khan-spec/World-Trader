@@ -29,7 +29,7 @@ fun CityDashboard(
     val summary = listOf(
         "Population" to city.population.toString(),
         "Treasury value" to city.treasuryValue.toString(),
-        "Defense" to city.defense.toString(),
+        "Defense strength" to CityDashboardRules.defenseStrength(city).toString(),
         "Housing" to "Level ${city.housingLevel}",
         "Welfare" to CityDashboardRules.welfareLabel(city),
         "Electricity" to CityDashboardRules.electricityLabel(city)

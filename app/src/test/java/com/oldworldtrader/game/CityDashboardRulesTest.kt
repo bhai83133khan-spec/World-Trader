@@ -107,4 +107,19 @@ class CityDashboardRulesTest {
         assertEquals(26, CityDashboardRules.nextYearIncome(expandedHousing))
     }
 
+
+    @Test
+    fun cityDashboardDefenseStrengthMatchesCombatBuildingBonuses() {
+        val fortified = CityData(
+            "fort", "Fortified City", "Egypt", 1_000, 2_000, 20, owned = true,
+            buildings = mutableMapOf("Army Barracks" to 2, "Police Station" to 1)
+        )
+        val corruptedLevels = fortified.copy(
+            buildings = mutableMapOf("Army Barracks" to -5, "Police Station" to -3)
+        )
+
+        assertEquals(70, CityDashboardRules.defenseStrength(fortified))
+        assertEquals(20, CityDashboardRules.defenseStrength(corruptedLevels))
+    }
+
 }

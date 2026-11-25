@@ -27,6 +27,13 @@ data class ArmyAnnualSettlement(
     val unpaidCityUpkeep: Int = 0
 )
 
+data class KingdomMilitarySummary(
+    val fieldArmy: Long,
+    val ownedCityDefense: Long,
+    val totalDefense: Long,
+    val defendedCities: Int
+)
+
 /** Deterministic offline army recruitment, city defense, combat and annual upkeep rules. */
 object ArmySystem {
     fun recruit(army: Int, gold: Int, soldiers: Int, cost: Int): ArmyRecruitmentResult {
@@ -52,6 +59,17 @@ object ArmySystem {
         val total = city.defense.toLong().coerceAtLeast(0L) + barracks.toLong() * 20L + police.toLong() * 10L
         return total.coerceIn(1L, Int.MAX_VALUE.toLong()).toInt()
     }
+
+    /** Aggregate only player-controlled cities; legacy ownership is migrated before counting. */
+    fun kingdomMilitarySummary(army: Int, cities: List<CityData>): KingdomMilitarySummary {
+        val fieldArmy = army.coerceAtLeast(0).toLong()
+        val playerCities = WorldTurnSystem.migrateOwnership(cities).filter {
+            it.owned && it.controlledBy == WorldTurnSystem.PLAYER_FACTION
+        }
+        val cityDefense = playerCities.sumOf { cityDefense(it).toLong() }
+        return KingdomMilitarySummary(fieldArmy, cityDefense, fieldArmy + cityDefense, playerCities.size)
+    }
+
 
     /** Minimum field force is twice the target's defense, with a floor to prevent tiny-city exploits. */
     fun minimumAttackForce(city: CityData): Int =

@@ -80,6 +80,7 @@ private fun OldWorldTraderApp() {
     val marketCity = cities.firstOrNull { it.id == marketCityId } ?: cities.first()
     val marketCityIndex = cities.indexOf(marketCity).coerceAtLeast(0)
     val kingdomSnapshot = KingdomProgression.evaluate(cities)
+    val militarySummary = ArmySystem.kingdomMilitarySummary(army, cities)
     val cityFoundingCost = KingdomProgression.foundingCost(cities)
     val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research", "War Reports")
 
@@ -476,6 +477,11 @@ private fun OldWorldTraderApp() {
                                 Text("Owned cities: ${metrics.ownedCities}")
                                 Text("Owned population: ${metrics.ownedPopulation}")
                                 Text("Building levels: ${metrics.ownedBuildingLevels}")
+                                Text("MILITARY STRENGTH", fontWeight = FontWeight.Bold)
+                                Text("Field army: ${militarySummary.fieldArmy}")
+                                Text("Owned city defense: ${militarySummary.ownedCityDefense}")
+                                Text("Total defense strength: ${militarySummary.totalDefense}")
+                                Text("Cities with defense: ${militarySummary.defendedCities}")
                                 if (next != null) {
                                     Text("NEXT RANK • ${next.title}", fontWeight = FontWeight.Bold)
                                     Text("Cities: ${metrics.ownedCities} / ${next.ownedCitiesRequired}")
