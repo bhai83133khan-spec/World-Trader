@@ -70,6 +70,40 @@ class EnemyKingdomSystemTest {
         assertEquals(2_950, result.state.kingdoms.getValue("North").treasury) // +200 annual income
     }
 
+
+    @Test
+    fun kingdomStateIsRemovedAfterPlayerCapturesItsLastCity() {
+        val lastCity = city("last", "Rival", population = 500, defense = 10)
+        val initial = EnemyKingdomSystem.initialize(listOf(lastCity), "Playerland")
+        val capture = ArmySystem.attack(100, lastCity)
+        assertTrue(capture.victory)
+
+        val result = EnemyKingdomSystem.advanceYear(
+            initial, listOf(capture.capturedCity!!), 1, "Playerland"
+        )
+
+        assertTrue("Defeated kingdom should not remain as orphaned saved state",
+            "Rival" !in result.state.kingdoms)
+        assertEquals(1, result.state.lastProcessedYear)
+    }
+
+    @Test
+    fun kingdomStateRemainsWhileItStillControlsAnotherCity() {
+        val cityToCapture = city("lost", "Rival", population = 500, defense = 10)
+        val survivingCity = city("remaining", "Rival", population = 500, defense = 10)
+        val initial = EnemyKingdomSystem.initialize(listOf(cityToCapture, survivingCity), "Playerland")
+        val capture = ArmySystem.attack(100, cityToCapture)
+        assertTrue(capture.victory)
+
+        val result = EnemyKingdomSystem.advanceYear(
+            initial, listOf(capture.capturedCity!!, survivingCity), 1, "Playerland"
+        )
+
+        assertTrue("Rival should remain active while it still owns a city",
+            "Rival" in result.state.kingdoms)
+        assertEquals(42, result.state.kingdoms.getValue("Rival").army)
+    }
+
     @Test
     fun duplicateYearIsIdempotent() {
         val cities = listOf(city("home", "Playerland", true, controlledBy = "player"), city("enemy", "Rival"))

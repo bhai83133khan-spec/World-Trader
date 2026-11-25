@@ -80,7 +80,9 @@ object EnemyKingdomSystem {
             return EnemyTurnResult(state, cities, emptyList())
         }
         val initialized = initialize(cities, playerKingdom)
-        val kingdoms = (initialized.kingdoms + state.kingdoms).toMutableMap()
+        // A kingdom with no remaining holdings cannot act again; discard orphaned saved state.
+        val activeKingdomIds = initialized.kingdoms.keys
+        val kingdoms = (initialized.kingdoms + state.kingdoms.filterKeys { it in activeKingdomIds }).toMutableMap()
         var updatedCities = cities
         val reports = mutableListOf<BattleReport>()
 
