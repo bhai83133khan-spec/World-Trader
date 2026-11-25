@@ -456,7 +456,6 @@ private fun OldWorldTraderApp() {
                                 } else Text("Maximum kingdom rank reached. Your realm is an empire.")
                             }
                         }
-                    }
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("ANNUAL KINGDOM ECONOMY", fontWeight = FontWeight.Bold)
@@ -470,6 +469,7 @@ private fun OldWorldTraderApp() {
                                 Text("${ownedCity.name}: +${WorldTurnSystem.ownedCityIncome(ownedCity)} income • -${WorldTurnSystem.cityServiceUpkeep(ownedCity)} upkeep")
                             }
                         }
+                    }
                     }
                     8 -> ResearchDashboard(state = researchState, gold = gold,
                         ownedPopulation = kingdomSnapshot.metrics.ownedPopulation,
