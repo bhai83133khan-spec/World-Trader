@@ -62,6 +62,19 @@ class MerchantContractSystemTest {
         assertEquals(500, result.gold)
         assertEquals(cargo, result.cargo)
         assertFalse(valid.id in result.state.completedContractIds)
+
+        val forgedQuantity = valid.copy(quantity = valid.quantity + 1)
+        val quantityResult = MerchantContractSystem.complete(
+            forgedQuantity, "alex", 1, 500, cargo, MerchantContractState()
+        )
+        assertFalse(quantityResult.success)
+        assertEquals(cargo, quantityResult.cargo)
+        assertEquals(500, quantityResult.gold)
+
+        val forgedTitle = valid.copy(title = "Free gold!")
+        assertFalse(MerchantContractSystem.complete(
+            forgedTitle, "alex", 1, 500, cargo, MerchantContractState()
+        ).success)
     }
 
     @Test
@@ -98,18 +111,18 @@ class MerchantContractSystemTest {
 
     @Test
     fun completionMarkerStorageKeepsRecentSequenceBounded() {
-        val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-$it" }).forYear(3)
-        assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, state.completedContractIds.size)
-        assertEquals((51..150).map { "contract-$it" }, state.completedContractIds)
+        val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-${it}" }).forYear(3)
+        assertEquals(100, state.completedContractIds.size)
+        assertEquals((51..150).map { "contract-${it}" }, state.completedContractIds)
     }
 
     @Test
     fun restoreCompletionIdsFiltersBlanksAndKeepsNewestHundred() {
-        val saved = (0..120).map { "contract-$it" } + listOf("", "  ")
+        val saved = (0..120).map { "contract-${it}" } + listOf("", "  ")
         val restored = MerchantContractState.restoreCompletedIds(saved)
 
         assertEquals(100, restored.size)
-        assertEquals((21..120).map { "contract-$it" }.toSet(), restored)
+        assertEquals((21..120).map { "contract-${it}" }.toSet(), restored)
     }
 
     @Test

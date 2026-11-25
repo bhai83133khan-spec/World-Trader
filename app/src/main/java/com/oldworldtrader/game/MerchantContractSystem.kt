@@ -86,6 +86,10 @@ object MerchantContractSystem {
             contract.quantity <= 0 || contract.rewardGold < 0 || year < 1 || gold < 0
         ) return reject("Contract data is invalid.")
         if (contract.id in safeState.completedContractIds) return reject("This contract has already been completed.")
+        // Treat the board as the source of truth: callers cannot edit reward, cargo requirement,
+        // destination or display terms by passing a modified contract object.
+        val canonical = board(contract.destinationPortId, year).firstOrNull { it.id == contract.id }
+        if (canonical != contract) return reject("Contract terms do not match the official board.")
         if (currentPortId != contract.destinationPortId) return reject("Deliver this contract at ${contract.destinationPortId}.")
         val carried = (cargo[contract.goodName] ?: 0).coerceAtLeast(0)
         if (carried < contract.quantity) return reject("Not enough ${contract.goodName} in cargo.")
