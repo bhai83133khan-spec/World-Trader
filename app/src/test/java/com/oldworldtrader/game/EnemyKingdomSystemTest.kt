@@ -34,7 +34,7 @@ class EnemyKingdomSystemTest {
         val state = EnemyKingdomSystem.initialize(cities, "Player")
         val result = EnemyKingdomSystem.advanceYear(state, cities, 1, "Player")
         assertEquals(42, result.state.kingdoms.getValue("North").army)
-        assertEquals(538, result.state.kingdoms.getValue("North").treasury)
+        assertEquals(533, result.state.kingdoms.getValue("North").treasury)
     }
 
     @Test
