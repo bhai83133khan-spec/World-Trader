@@ -22,6 +22,7 @@ fun FleetDashboard(
     onSelectShip: (String) -> Unit,
     onDepart: (String) -> Unit,
     onAdvanceDay: () -> Unit,
+    onUpgradeShip: (String) -> Unit,
     cargoCapacityBonus: Int = 0
 ) {
     val portName = cities.firstOrNull { it.id == fleetState.currentPortId }?.name ?: fleetState.currentPortId
@@ -37,12 +38,22 @@ fun FleetDashboard(
                     Text(ship.name, fontWeight = FontWeight.Bold)
                     Text("Cost: ${ship.purchaseCost} gold • Capacity: ${ship.cargoCapacity} items")
                     if (ship.id in fleetState.ownedShipIds) {
+                        val level = fleetState.shipUpgradeLevels[ship.id] ?: 0
+                        val upgradeCost = FleetSystem.upgradeCost(fleetState, ship.id)
                         Text(if (ship.id == fleetState.selectedShipId) "Currently selected" else "Owned")
+                        Text("Cargo hull level $level/${FleetSystem.MAX_SHIP_UPGRADE_LEVEL} • Capacity ${FleetSystem.shipCapacity(fleetState, ship.id)}")
                         Button(
                             enabled = !fleetState.isAtSea && ship.id != fleetState.selectedShipId,
                             onClick = { onSelectShip(ship.id) },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text(if (ship.id == fleetState.selectedShipId) "Selected" else "Select vessel") }
+                        Button(
+                            enabled = !fleetState.isAtSea && upgradeCost != null && gold >= (upgradeCost ?: Int.MAX_VALUE),
+                            onClick = { onUpgradeShip(ship.id) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (upgradeCost == null) "Cargo hull max level" else "Upgrade cargo hull • $upgradeCost gold")
+                        }
                     } else {
                         Button(
                             enabled = !fleetState.isAtSea && gold >= ship.purchaseCost,

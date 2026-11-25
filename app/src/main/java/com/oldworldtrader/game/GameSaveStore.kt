@@ -85,6 +85,9 @@ object GameSaveStore {
             val ownedShipIds = ownedShipsArray?.let { array ->
                 (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }.toSet()
             }
+            val upgradeJson = fleetJson?.optJSONObject("shipUpgradeLevels")
+            val shipUpgradeLevels = mutableMapOf<String, Int>()
+            upgradeJson?.keys()?.forEach { shipId -> shipUpgradeLevels[shipId] = upgradeJson.optInt(shipId, 0) }
             val voyageJson = fleetJson?.optJSONObject("voyage")
             val savedVoyage = voyageJson?.let {
                 Voyage(it.optString("routeId"), it.optString("destinationPortId"), it.optInt("remainingDays", 0))
@@ -93,7 +96,8 @@ object GameSaveStore {
                 ownedShipIds = ownedShipIds,
                 selectedShipId = fleetJson?.optString("selectedShipId"),
                 currentPortId = fleetJson?.optString("currentPortId"),
-                voyage = savedVoyage
+                voyage = savedVoyage,
+                shipUpgradeLevels = shipUpgradeLevels
             )
             val marketCityId = CityTravelSystem.restoreMarketCityId(
                 root.optString("marketCityId").takeIf { it.isNotBlank() }, cities, fleetState.currentPortId
@@ -212,6 +216,11 @@ object GameSaveStore {
         fleetJson.put("ownedShipIds", ownedShips)
             .put("selectedShipId", state.fleetState.selectedShipId)
             .put("currentPortId", state.fleetState.currentPortId)
+        val upgradeLevelsJson = JSONObject()
+        state.fleetState.shipUpgradeLevels.forEach { (shipId, level) ->
+            if (shipId in state.fleetState.ownedShipIds) upgradeLevelsJson.put(shipId, level.coerceIn(0, FleetSystem.MAX_SHIP_UPGRADE_LEVEL))
+        }
+        fleetJson.put("shipUpgradeLevels", upgradeLevelsJson)
         state.fleetState.voyage?.let { voyage ->
             fleetJson.put("voyage", JSONObject().put("routeId", voyage.routeId)
                 .put("destinationPortId", voyage.destinationPortId).put("remainingDays", voyage.remainingDays))

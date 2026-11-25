@@ -453,6 +453,14 @@ private fun OldWorldTraderApp() {
                                     if (!action.state.isAtSea) marketCityId = action.state.currentPortId
                                 }
                                 message = action.message
+                            },
+                            onUpgradeShip = { shipId ->
+                                val action = FleetSystem.upgradeShip(fleetState, shipId, gold)
+                                if (action.success) {
+                                    fleetState = action.state
+                                    gold = action.gold
+                                }
+                                message = action.message
                             }
                         )
                     }

@@ -26,7 +26,8 @@ data class FleetState(
     val ownedShipIds: Set<String> = setOf("skiff"),
     val selectedShipId: String = "skiff",
     val currentPortId: String = "alex",
-    val voyage: Voyage? = null
+    val voyage: Voyage? = null,
+    val shipUpgradeLevels: Map<String, Int> = emptyMap()
 ) {
     val isAtSea: Boolean get() = voyage != null
 }
@@ -70,7 +71,47 @@ object FleetSystem {
     fun selectedShip(state: FleetState): ShipSpec? =
         shipById(state.selectedShipId)?.takeIf { it.id in state.ownedShipIds }
 
-    fun selectedCapacity(state: FleetState): Int = selectedShip(state)?.cargoCapacity ?: 0
+    const val MAX_SHIP_UPGRADE_LEVEL = 3
+
+    fun shipCapacity(state: FleetState, shipId: String): Int {
+        val ship = shipById(shipId) ?: return 0
+        val level = state.shipUpgradeLevels[shipId]?.coerceIn(0, MAX_SHIP_UPGRADE_LEVEL) ?: 0
+        val increment = ship.cargoCapacity / 4
+        return (ship.cargoCapacity.toLong() + increment.toLong() * level)
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    fun selectedCapacity(state: FleetState): Int =
+        selectedShip(state)?.let { shipCapacity(state, it.id) } ?: 0
+
+    /** Next cargo-hull upgrade price; null when unowned or fully upgraded. */
+    fun upgradeCost(state: FleetState, shipId: String): Int? {
+        val ship = shipById(shipId) ?: return null
+        if (shipId !in state.ownedShipIds) return null
+        val level = state.shipUpgradeLevels[shipId]?.coerceIn(0, MAX_SHIP_UPGRADE_LEVEL) ?: 0
+        if (level >= MAX_SHIP_UPGRADE_LEVEL) return null
+        val baseCost = maxOf(500L, ship.purchaseCost.toLong() / 4L)
+        return (baseCost * (level + 1L)).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    fun upgradeShip(state: FleetState, shipId: String, gold: Int): FleetAction {
+        if (state.isAtSea) return rejected(state, gold, "You cannot upgrade ships while at sea.")
+        if (gold < 0) return rejected(state, gold, "Invalid wallet.")
+        if (shipId !in state.ownedShipIds) return rejected(state, gold, "You do not own that ship.")
+        val ship = shipById(shipId) ?: return rejected(state, gold, "Unknown ship.")
+        val level = state.shipUpgradeLevels[shipId]?.coerceIn(0, MAX_SHIP_UPGRADE_LEVEL) ?: 0
+        if (level >= MAX_SHIP_UPGRADE_LEVEL) return rejected(state, gold, "${ship.name} has reached maximum cargo-hull level.")
+        val cost = upgradeCost(state, shipId) ?: return rejected(state, gold, "Upgrade unavailable.")
+        if (gold < cost) return rejected(state, gold, "Need $cost gold for ${ship.name}'s cargo-hull upgrade.")
+        val nextLevels = state.shipUpgradeLevels + (shipId to (level + 1))
+        val nextState = state.copy(shipUpgradeLevels = nextLevels)
+        return FleetAction(
+            nextState,
+            gold - cost,
+            true,
+            "${ship.name} upgraded to cargo-hull level ${level + 1}. Capacity: ${shipCapacity(nextState, shipId)}."
+        )
+    }
 
     fun cargoUsed(cargo: Map<String, Int>): Int =
         cargo.values.sumOf { it.coerceAtLeast(0).toLong() }
@@ -143,7 +184,8 @@ object FleetSystem {
         ownedShipIds: Set<String>?,
         selectedShipId: String?,
         currentPortId: String?,
-        voyage: Voyage?
+        voyage: Voyage?,
+        shipUpgradeLevels: Map<String, Int>? = null
     ): FleetState {
         val fallback = FleetState()
         val owned = ships.map { it.id }.filter { it in ownedShipIds.orEmpty() }.toSet().ifEmpty { fallback.ownedShipIds }
@@ -157,7 +199,10 @@ object FleetSystem {
                 candidate.destinationPortId in portIds &&
                 candidate.remainingDays in 1..route.travelDays
         }
-        return FleetState(owned, selected, port, safeVoyage)
+        val safeUpgradeLevels = shipUpgradeLevels.orEmpty().mapNotNull { (shipId, level) ->
+            if (shipId in owned && level in 1..MAX_SHIP_UPGRADE_LEVEL) shipId to level else null
+        }.toMap()
+        return FleetState(owned, selected, port, safeVoyage, safeUpgradeLevels)
     }
 
     private fun rejected(state: FleetState, gold: Int, message: String) =

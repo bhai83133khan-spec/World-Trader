@@ -94,6 +94,54 @@ class FleetSystemTest {
     }
 
     @Test
+    fun cargoHullUpgradesIncreaseCapacityWithRisingCostAndMaxLevel() {
+        val purchased = FleetSystem.purchase(FleetState(), "cog", 20_000)
+        val selected = FleetSystem.selectShip(purchased.state, "cog", purchased.gold).state
+        assertEquals(1_625, FleetSystem.upgradeCost(selected, "cog"))
+        val first = FleetSystem.upgradeShip(selected, "cog", purchased.gold)
+        assertTrue(first.success)
+        assertEquals(1, first.state.shipUpgradeLevels["cog"])
+        assertEquals(200, FleetSystem.shipCapacity(first.state, "cog"))
+        assertEquals(11_875, first.gold)
+        assertEquals(3_250, FleetSystem.upgradeCost(first.state, "cog"))
+        val second = FleetSystem.upgradeShip(first.state, "cog", first.gold)
+        assertTrue(second.success)
+        assertEquals(240, FleetSystem.shipCapacity(second.state, "cog"))
+        val third = FleetSystem.upgradeShip(second.state, "cog", second.gold)
+        assertTrue(third.success)
+        assertEquals(280, FleetSystem.selectedCapacity(third.state))
+        assertEquals(3, third.state.shipUpgradeLevels["cog"])
+        assertEquals(null, FleetSystem.upgradeCost(third.state, "cog"))
+        assertFalse(FleetSystem.upgradeShip(third.state, "cog", third.gold).success)
+    }
+
+    @Test
+    fun cargoHullUpgradesRejectUnownedInsufficientFundsAndAtSea() {
+        val initial = FleetState()
+        assertFalse(FleetSystem.upgradeShip(initial, "cog", 100_000).success)
+        val purchased = FleetSystem.purchase(initial, "sloop", 3_000).state
+        assertFalse(FleetSystem.upgradeShip(purchased, "sloop", 499).success)
+        assertEquals(750, FleetSystem.upgradeCost(purchased, "sloop"))
+        val atSea = FleetSystem.depart(purchased, FleetSystem.routesFrom("alex").first().id, 10_000).state
+        assertFalse(FleetSystem.upgradeShip(atSea, "sloop", 10_000).success)
+        assertEquals(0, atSea.shipUpgradeLevels["sloop"] ?: 0)
+    }
+
+    @Test
+    fun restoreKeepsOnlyOwnedShipUpgradeLevelsWithinRange() {
+        val restored = FleetSystem.restore(
+            ownedShipIds = setOf("cog"),
+            selectedShipId = "cog",
+            currentPortId = "alex",
+            voyage = null,
+            shipUpgradeLevels = mapOf("cog" to 2, "skiff" to 3, "ghost" to 1, "carrack" to 99, "sloop" to -2)
+        )
+        assertEquals(mapOf("cog" to 2), restored.shipUpgradeLevels)
+        assertEquals(240, FleetSystem.selectedCapacity(restored))
+        assertEquals(null, FleetSystem.upgradeCost(restored, "skiff"))
+    }
+
+    @Test
     fun restoreSanitizesUnknownShipsPortsAndInvalidVoyages() {
         val clean = FleetSystem.restore(setOf("unknown", "cog"), "unknown", "bad-port", null)
         assertEquals(setOf("cog"), clean.ownedShipIds)
