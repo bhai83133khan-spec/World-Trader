@@ -22,6 +22,7 @@ fun CityDashboard(
     upgradeDiscountPercent: Int = 0,
     garrison: Int = 0,
     fieldArmy: Int = 0,
+    garrisonActionsEnabled: Boolean = true,
     onStation: (Int) -> Unit = {},
     onWithdraw: (Int) -> Unit = {}
 ) {
@@ -78,26 +79,27 @@ fun CityDashboard(
                 Text("Stationed soldiers: $garrison / $capacity")
                 Text("Defense bonus: +$garrison")
                 Text("Annual upkeep: ${CityGarrisonSystem.annualUpkeep(garrison)} gold")
+                if (!garrisonActionsEnabled) Text("Garrison transfers are unavailable while your fleet is at sea.")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        enabled = stationable >= 10,
+                        enabled = garrisonActionsEnabled && stationable >= 10,
                         onClick = { onStation(10) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Station 10") }
                     Button(
-                        enabled = stationable > 0,
+                        enabled = garrisonActionsEnabled && stationable > 0,
                         onClick = { onStation(stationable) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Station all • $stationable") }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        enabled = withdrawable >= 10 && fieldArmy.toLong() + 10L <= Int.MAX_VALUE.toLong(),
+                        enabled = garrisonActionsEnabled && withdrawable >= 10 && fieldArmy.toLong() + 10L <= Int.MAX_VALUE.toLong(),
                         onClick = { onWithdraw(10) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Withdraw 10") }
                     Button(
-                        enabled = withdrawable > 0 && fieldArmy.toLong() + withdrawable.toLong() <= Int.MAX_VALUE.toLong(),
+                        enabled = garrisonActionsEnabled && withdrawable > 0 && fieldArmy.toLong() + withdrawable.toLong() <= Int.MAX_VALUE.toLong(),
                         onClick = { onWithdraw(withdrawable) },
                         modifier = Modifier.weight(1f)
                     ) { Text("Withdraw all • $withdrawable") }

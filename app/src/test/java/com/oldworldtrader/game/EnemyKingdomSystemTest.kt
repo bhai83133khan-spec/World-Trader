@@ -1,6 +1,7 @@
 package com.oldworldtrader.game
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,8 +24,8 @@ class EnemyKingdomSystemTest {
             "Playerland"
         )
         assertEquals(setOf("North", "South"), state.kingdoms.keys)
-        assertEquals(40, state.kingdoms.getValue("North").army) // Legacy-owned city must not inflate enemy forces.
-        assertEquals(500, state.kingdoms.getValue("North").treasury) // Legacy-owned treasury must not seed the rival.
+        assertEquals(40, state.kingdoms.getValue("North").army)
+        assertEquals(500, state.kingdoms.getValue("North").treasury)
         assertEquals(40, state.kingdoms.getValue("South").army)
     }
 
@@ -44,10 +45,7 @@ class EnemyKingdomSystemTest {
         val state = EnemyKingdomState(
             kingdoms = mapOf("North" to EnemyKingdom("North", army = 40, treasury = 500, aggression = 0))
         )
-
         val result = EnemyKingdomSystem.advanceYear(state, listOf(legacyOwned, neutral), 1, "Playerland")
-
-
         assertEquals(42, result.state.kingdoms.getValue("North").army)
         assertEquals(533, result.state.kingdoms.getValue("North").treasury)
         assertEquals(9_000, result.cities.first { it.id == "legacy" }.population)
@@ -59,17 +57,14 @@ class EnemyKingdomSystemTest {
             owned = false, controlledBy = "North")
         val native = city("north", "North", population = 1_000)
         val holdings = listOf(captured, native)
-
         val initial = EnemyKingdomSystem.initialize(holdings, "Playerland")
         assertEquals(setOf("North"), initial.kingdoms.keys)
         assertEquals(40, initial.kingdoms.getValue("North").army)
         assertEquals(2_750, initial.kingdoms.getValue("North").treasury)
-
         val result = EnemyKingdomSystem.advanceYear(initial, holdings, 1, "Playerland")
-        assertEquals(52, result.state.kingdoms.getValue("North").army) // +12 from 6,000 controlled people
-        assertEquals(2_950, result.state.kingdoms.getValue("North").treasury) // +200 annual income
+        assertEquals(52, result.state.kingdoms.getValue("North").army)
+        assertEquals(2_950, result.state.kingdoms.getValue("North").treasury)
     }
-
 
     @Test
     fun kingdomStateIsRemovedAfterPlayerCapturesItsLastCity() {
@@ -77,13 +72,8 @@ class EnemyKingdomSystemTest {
         val initial = EnemyKingdomSystem.initialize(listOf(lastCity), "Playerland")
         val capture = ArmySystem.attack(100, lastCity)
         assertTrue(capture.victory)
-
-        val result = EnemyKingdomSystem.advanceYear(
-            initial, listOf(capture.capturedCity!!), 1, "Playerland"
-        )
-
-        assertTrue("Defeated kingdom should not remain as orphaned saved state",
-            "Rival" !in result.state.kingdoms)
+        val result = EnemyKingdomSystem.advanceYear(initial, listOf(capture.capturedCity!!), 1, "Playerland")
+        assertTrue("Defeated kingdom should not remain as orphaned saved state", "Rival" !in result.state.kingdoms)
         assertEquals(1, result.state.lastProcessedYear)
     }
 
@@ -94,13 +84,8 @@ class EnemyKingdomSystemTest {
         val initial = EnemyKingdomSystem.initialize(listOf(cityToCapture, survivingCity), "Playerland")
         val capture = ArmySystem.attack(100, cityToCapture)
         assertTrue(capture.victory)
-
-        val result = EnemyKingdomSystem.advanceYear(
-            initial, listOf(capture.capturedCity!!, survivingCity), 1, "Playerland"
-        )
-
-        assertTrue("Rival should remain active while it still owns a city",
-            "Rival" in result.state.kingdoms)
+        val result = EnemyKingdomSystem.advanceYear(initial, listOf(capture.capturedCity!!, survivingCity), 1, "Playerland")
+        assertTrue("Rival should remain active while it still owns a city", "Rival" in result.state.kingdoms)
         assertEquals(42, result.state.kingdoms.getValue("Rival").army)
     }
 
@@ -113,7 +98,6 @@ class EnemyKingdomSystemTest {
             kingdoms = mapOf("North" to EnemyKingdom("North", army = 60, treasury = 1_000, aggression = 100))
         )
         val result = EnemyKingdomSystem.advanceYear(state, listOf(home, rivalCity), 1, "Playerland", mapOf("home" to 80))
-
         assertEquals("player", result.cities.first { it.id == "home" }.controlledBy)
         assertEquals(68, result.cityGarrisons["home"])
         assertTrue(result.reports.single().defenderStrength > ArmySystem.cityDefense(home))

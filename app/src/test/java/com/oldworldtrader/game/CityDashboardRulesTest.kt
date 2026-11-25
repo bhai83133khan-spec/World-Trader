@@ -9,15 +9,13 @@ class CityDashboardRulesTest {
     @Test
     fun dashboardProjectsSamePopulationGrowthAndIncomeAsYearAdvance() {
         val city = CityData("new", "New City", "Egypt", 300, 2500, 10, owned = true)
-
         assertEquals(EconomyLogic.populationGrowth(city), CityDashboardRules.annualGrowth(city))
-        assertEquals(15, CityDashboardRules.nextYearIncome(city)) // 300 + 10 growth, then integer-divided by 20
+        assertEquals(15, CityDashboardRules.nextYearIncome(city))
     }
 
     @Test
     fun unownedCityHasNoProjectedGrowthOrIncome() {
         val city = CityData("ven", "Venice", "Italy", 2400, 12000, 40)
-
         assertEquals(0, CityDashboardRules.annualGrowth(city))
         assertEquals(0, CityDashboardRules.nextYearIncome(city))
         assertFalse(CityDashboardRules.upgradeBlockReason(city, EconomyLogic.buildingSpecs.first(), 12000) == null)
@@ -27,10 +25,8 @@ class CityDashboardRulesTest {
     fun upgradeReasonReportsPopulationFundsAndLevelLimits() {
         val house = EconomyLogic.buildingSpecs.first { it.name == "House" }
         val city = CityData("alex", "Alexandria", "Egypt", 0, 6000, 20, owned = true)
-
         assertEquals("Need 150 gold; you have 100.", CityDashboardRules.upgradeBlockReason(city, house, 100))
         assertNull(CityDashboardRules.upgradeBlockReason(city, house, 150))
-
         val maxed = city.copy(buildings = mutableMapOf("House" to Int.MAX_VALUE))
         assertEquals("Maximum level reached.", CityDashboardRules.upgradeBlockReason(maxed, house, Int.MAX_VALUE))
     }
@@ -43,54 +39,37 @@ class CityDashboardRulesTest {
         assertEquals("Need 135 gold; you have 134.", CityDashboardRules.upgradeBlockReason(city, house, 134, 10))
     }
 
-
     @Test
     fun dashboardSummariesReflectBuildingsAndOnlyTreatPositiveLevelsAsBuilt() {
-        val city = CityData(
-            "alex", "Alexandria", "Egypt", 1200, 6000, 20, owned = true,
-            buildings = mutableMapOf("Hospital" to 1, "Park" to 0)
-        )
+        val city = CityData("alex", "Alexandria", "Egypt", 1200, 6000, 20, owned = true,
+            buildings = mutableMapOf("Hospital" to 1, "Park" to 0))
         assertEquals("Good", CityDashboardRules.welfareLabel(city))
         assertEquals("Not available", CityDashboardRules.electricityLabel(city))
-
-        val powered = city.copy(
-            buildings = mutableMapOf("Hospital" to 1, "Park" to 1, "Power Plant" to 1),
-            unlocked = mutableSetOf("Market", "Electricity")
-        )
+        val powered = city.copy(buildings = mutableMapOf("Hospital" to 1, "Park" to 1, "Power Plant" to 1),
+            unlocked = mutableSetOf("Market", "Electricity"))
         assertEquals("Excellent", CityDashboardRules.welfareLabel(powered))
         assertEquals("Powered", CityDashboardRules.electricityLabel(powered))
     }
 
     @Test
     fun dashboardIncomePreviewIncludesMarketHarborAndWorkshopBonusesAfterGrowth() {
-        val city = CityData(
-            "alex", "Alexandria", "Egypt", 300, 6000, 20, owned = true,
-            buildings = mutableMapOf("Market" to 2, "Harbor" to 1, "Workshop" to 1)
-        )
-
-        // 300 + 10 annual growth = 310 people => 15 base gold, plus 100 building income.
+        val city = CityData("alex", "Alexandria", "Egypt", 300, 6000, 20, owned = true,
+            buildings = mutableMapOf("Market" to 2, "Harbor" to 1, "Workshop" to 1))
         assertEquals(115, CityDashboardRules.nextYearIncome(city))
     }
 
     @Test
     fun dashboardIncomePreviewRejectsRivalControlledOwnedCity() {
-        val city = CityData(
-            "alex", "Alexandria", "Egypt", 300, 6000, 20, owned = true,
-            controlledBy = "Rival",
-            buildings = mutableMapOf("Market" to 2)
-        )
-
+        val city = CityData("alex", "Alexandria", "Egypt", 300, 6000, 20, owned = true,
+            controlledBy = "Rival", buildings = mutableMapOf("Market" to 2))
         assertEquals(0, CityDashboardRules.annualGrowth(city))
         assertEquals(0, CityDashboardRules.nextYearIncome(city))
     }
 
     @Test
     fun nextYearCityPreviewShowsServiceCostsAndNetContribution() {
-        val city = CityData(
-            "home", "Home", "Egypt", 1_200, 500, 10, owned = true,
-            controlledBy = WorldTurnSystem.PLAYER_FACTION,
-            buildings = mutableMapOf("Hospital" to 1, "Park" to 1)
-        )
+        val city = CityData("home", "Home", "Egypt", 1_200, 500, 10, owned = true,
+            controlledBy = WorldTurnSystem.PLAYER_FACTION, buildings = mutableMapOf("Hospital" to 1, "Park" to 1))
         assertEquals(60, CityDashboardRules.nextYearIncome(city))
         assertEquals(17, CityDashboardRules.nextYearCityUpkeep(city))
         assertEquals(43, CityDashboardRules.nextYearNetIncome(city))
@@ -101,25 +80,26 @@ class CityDashboardRulesTest {
         val nearCapacity = CityData("near", "Near Capacity", "Egypt", 510, 0, 0, owned = true)
         assertEquals(0, CityDashboardRules.annualGrowth(nearCapacity))
         assertEquals(25, CityDashboardRules.nextYearIncome(nearCapacity))
-
         val expandedHousing = nearCapacity.copy(housingLevel = 2)
         assertEquals(15, CityDashboardRules.annualGrowth(expandedHousing))
         assertEquals(26, CityDashboardRules.nextYearIncome(expandedHousing))
     }
 
-
     @Test
     fun cityDashboardDefenseStrengthMatchesCombatBuildingBonuses() {
-        val fortified = CityData(
-            "fort", "Fortified City", "Egypt", 1_000, 2_000, 20, owned = true,
-            buildings = mutableMapOf("Army Barracks" to 2, "Police Station" to 1)
-        )
-        val corruptedLevels = fortified.copy(
-            buildings = mutableMapOf("Army Barracks" to -5, "Police Station" to -3)
-        )
-
+        val fortified = CityData("fort", "Fortified City", "Egypt", 1_000, 2_000, 20, owned = true,
+            buildings = mutableMapOf("Army Barracks" to 2, "Police Station" to 1))
+        val corruptedLevels = fortified.copy(buildings = mutableMapOf("Army Barracks" to -5, "Police Station" to -3))
         assertEquals(70, CityDashboardRules.defenseStrength(fortified))
         assertEquals(20, CityDashboardRules.defenseStrength(corruptedLevels))
     }
 
+    @Test
+    fun rivalControlledCityCannotBeUpgradedEvenIfLegacyOwnedFlagIsTrue() {
+        val house = EconomyLogic.buildingSpecs.first { it.name == "House" }
+        val rivalCity = CityData("rival", "Rival City", "Italy", 1_000, 1_000, 20,
+            owned = true, controlledBy = "Rival")
+        assertEquals("You must own this city before building here.",
+            CityDashboardRules.upgradeBlockReason(rivalCity, house, Int.MAX_VALUE))
+    }
 }

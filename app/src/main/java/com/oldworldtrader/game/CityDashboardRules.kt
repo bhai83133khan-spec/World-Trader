@@ -3,15 +3,11 @@ package com.oldworldtrader.game
 /** Values shown on the owned-city dashboard, derived from the rules the game currently applies. */
 object CityDashboardRules {
     fun annualGrowth(city: CityData): Int =
-        if (city.owned && (city.controlledBy == null || city.controlledBy == WorldTurnSystem.PLAYER_FACTION)) {
-            CityGrowthSystem.annualGrowth(city)
-        } else {
-            0
-        }
+        if (CityGarrisonSystem.isPlayerControlled(city)) CityGrowthSystem.annualGrowth(city) else 0
 
     /** Preview the same post-growth city income used by the annual kingdom settlement, including buildings. */
     fun nextYearIncome(city: CityData, taxRatePercent: Int = 10): Int {
-        if (!city.owned) return 0
+        if (!CityGarrisonSystem.isPlayerControlled(city)) return 0
         val populationAfterGrowth = (city.population.toLong() + annualGrowth(city).toLong())
             .coerceAtMost(CityGrowthSystem.populationCapacity(city).toLong())
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
@@ -20,7 +16,7 @@ object CityDashboardRules {
     }
 
     fun nextYearCityUpkeep(city: CityData): Int {
-        if (!city.owned) return 0
+        if (!CityGarrisonSystem.isPlayerControlled(city)) return 0
         val projectedPopulation = (city.population.toLong() + annualGrowth(city).toLong())
             .coerceAtMost(CityGrowthSystem.populationCapacity(city).toLong())
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
@@ -55,7 +51,7 @@ object CityDashboardRules {
         }
 
     fun upgradeBlockReason(city: CityData, spec: BuildingSpec, gold: Int, upgradeDiscountPercent: Int = 0): String? {
-        if (!city.owned) return "You must own this city before building here."
+        if (!CityGarrisonSystem.isPlayerControlled(city)) return "You must own this city before building here."
         if (city.population < spec.unlockPopulation) return "Requires ${spec.unlockPopulation} people."
         val level = (city.buildings[spec.name] ?: 0).coerceAtLeast(0)
         if (level == Int.MAX_VALUE) return "Maximum level reached."
