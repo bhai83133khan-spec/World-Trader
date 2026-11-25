@@ -36,6 +36,24 @@ object WorldTurnSystem {
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
+    /** Annual service/building upkeep for each level in player-controlled cities. */
+    fun cityServiceUpkeep(city: CityData): Int {
+        if (!city.owned || city.controlledBy != PLAYER_FACTION) return 0
+        val rates = mapOf(
+            "Hospital" to 12L, "Police Station" to 10L, "Army Barracks" to 15L,
+            "Temple" to 8L, "Park" to 5L, "Power Plant" to 25L,
+            "Market" to 5L, "Harbor" to 8L, "Workshop" to 6L
+        )
+        val total = city.buildings.entries.sumOf { (name, level) ->
+            (rates[name] ?: 0L) * level.toLong().coerceAtLeast(0L)
+        }
+        return total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    fun kingdomCityUpkeep(cities: List<CityData>): Int =
+        cities.sumOf { cityServiceUpkeep(it).toLong() }
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+
     fun kingdomIncome(cities: List<CityData>, taxRatePercent: Int = 10): Int =
         cities.sumOf { ownedCityIncome(it, taxRatePercent).toLong() }
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()

@@ -37,6 +37,20 @@ class GameTurnSystemTest {
     }
 
     @Test
+    fun yearlySettlementPaysCityServicesBeforeArmyAndReturnsUpkeepBreakdown() {
+        val home = city("home", "Playerland", 1_000, owned = true, controlledBy = "player",
+            buildings = mutableMapOf("Hospital" to 1))
+        val result = GameTurnSystem.advanceYear(
+            currentYear = 4, cities = listOf(home), marketState = MarketState(),
+            enemyKingdomState = EnemyKingdomState(), battleReports = emptyList(), army = 10,
+            gold = 1_000, playerKingdom = "Playerland"
+        )
+        assertEquals(50, result.cityIncome)
+        assertEquals(12, result.cityUpkeep)
+        assertEquals(1_028, result.gold)
+    }
+
+    @Test
     fun yearEndIsSafeAndDoesNotMutateSaveState() {
         val home = city("home", "Playerland", 100, owned = true)
         val state = EnemyKingdomState(lastProcessedYear = Int.MAX_VALUE)

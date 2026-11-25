@@ -177,6 +177,28 @@ class ArmySystemTest {
     }
 
     @Test
+    fun annualCityServiceCostsArePaidBeforeArmyUpkeepAndShownInSettlement() {
+        val result = ArmySystem.settleYear(10, 100, 200, 80)
+        assertEquals(200, result.income)
+        assertEquals(80, result.cityUpkeep)
+        assertEquals(10, result.upkeep)
+        assertEquals(210, result.gold)
+        assertEquals(0, result.desertions)
+        assertEquals(0, result.unpaidCityUpkeep)
+    }
+
+    @Test
+    fun unpaidCityCostsConsumeAvailableFundsBeforeArmyDesertions() {
+        val result = ArmySystem.settleYear(20, 10, 5, 30)
+        assertEquals(0, result.gold)
+        assertEquals(30, result.cityUpkeep)
+        assertEquals(15, result.unpaidCityUpkeep)
+        assertEquals(20, result.upkeep)
+        assertEquals(20, result.desertions)
+        assertEquals(0, result.army)
+    }
+
+    @Test
     fun emptyArmyHasNoUpkeepAndNegativeInputsAreSafelyClamped() {
         val result = ArmySystem.settleYear(0, -50, -10)
         assertEquals(0, result.army)

@@ -85,6 +85,18 @@ class CityDashboardRulesTest {
     }
 
     @Test
+    fun nextYearCityPreviewShowsServiceCostsAndNetContribution() {
+        val city = CityData(
+            "home", "Home", "Egypt", 1_200, 500, 10, owned = true,
+            controlledBy = EnemyKingdomSystem.PLAYER_FACTION,
+            buildings = mutableMapOf("Hospital" to 1, "Park" to 1)
+        )
+        assertEquals(60, CityDashboardRules.nextYearIncome(city))
+        assertEquals(17, CityDashboardRules.nextYearCityUpkeep(city))
+        assertEquals(43, CityDashboardRules.nextYearNetIncome(city))
+    }
+
+    @Test
     fun dashboardGrowthPreviewRespectsHousingCapacityAndUpgrade() {
         val nearCapacity = CityData("near", "Near Capacity", "Egypt", 510, 0, 0, owned = true)
         assertEquals(0, CityDashboardRules.annualGrowth(nearCapacity))

@@ -36,6 +36,26 @@ class WorldTurnSystemTest {
     }
 
     @Test
+    fun annualCityServiceUpkeepCountsOnlyPlayerControlledBuildingsAndLevels() {
+        val city = CityData(
+            "home", "Home", "Egypt", 2_000, 500, 10, owned = true,
+            controlledBy = EnemyKingdomSystem.PLAYER_ID,
+            buildings = mutableMapOf(
+                "Hospital" to 2, "Police Station" to 1, "Army Barracks" to 1,
+                "Temple" to 2, "Park" to 3, "Power Plant" to 1,
+                "Market" to 2, "Harbor" to 1, "Workshop" to 1, "House" to 4,
+                "Unknown" to 99, "Negative" to -5
+            )
+        )
+        assertEquals(129, WorldTurnSystem.cityServiceUpkeep(city))
+        assertEquals(129, WorldTurnSystem.kingdomCityUpkeep(listOf(city)))
+        assertEquals(0, WorldTurnSystem.cityServiceUpkeep(city.copy(controlledBy = "Rival")))
+        assertEquals(0, WorldTurnSystem.cityServiceUpkeep(city.copy(owned = false)))
+        val overflow = city.copy(buildings = mutableMapOf("Power Plant" to Int.MAX_VALUE))
+        assertEquals(Int.MAX_VALUE, WorldTurnSystem.cityServiceUpkeep(overflow))
+    }
+
+    @Test
     fun enemyYearCapturesPlayerCityAndReturnsBattleReportOnce() {
         val home = CityData(
             "home", "Home", "Playerland", 1_000, 1_000, 10,

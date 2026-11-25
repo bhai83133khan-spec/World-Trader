@@ -50,11 +50,15 @@ fun CityDashboard(
 
     val growth = CityDashboardRules.annualGrowth(city)
     val nextYearIncome = CityDashboardRules.nextYearIncome(city)
+    val nextYearCityUpkeep = CityDashboardRules.nextYearCityUpkeep(city)
+    val netCityIncome = CityDashboardRules.nextYearNetIncome(city)
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("NEXT YEAR PREVIEW", fontWeight = FontWeight.Bold)
             Text(if (city.owned) "Population: +$growth people" else "Population: no growth while unowned")
             Text(if (city.owned) "City income: +$nextYearIncome gold" else "City income: 0 gold while unowned")
+            Text(if (city.owned) "Building/service upkeep: -$nextYearCityUpkeep gold" else "Building/service upkeep: 0 gold while unowned")
+            Text(if (city.owned) "Net city contribution: $netCityIncome gold" else "Net city contribution: 0 gold")
             Text("Army upkeep (1 gold per soldier/year) is charged at Advance Year.")
         }
     }

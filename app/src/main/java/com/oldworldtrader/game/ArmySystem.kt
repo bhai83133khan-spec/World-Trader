@@ -22,7 +22,9 @@ data class ArmyAnnualSettlement(
     val income: Int,
     val upkeep: Int,
     val desertions: Int,
-    val message: String
+    val message: String,
+    val cityUpkeep: Int = 0,
+    val unpaidCityUpkeep: Int = 0
 )
 
 /** Deterministic offline army recruitment, city defense, combat and annual upkeep rules. */
@@ -128,20 +130,29 @@ object ArmySystem {
      * Apply city income and army upkeep. If the treasury cannot cover upkeep,
      * one soldier deserts for each unpaid gold, up to the remaining army.
      */
-    fun settleYear(army: Int, gold: Int, cityIncome: Long): ArmyAnnualSettlement {
+    fun settleYear(army: Int, gold: Int, cityIncome: Long, cityUpkeep: Long = 0L): ArmyAnnualSettlement {
         val safeArmy = army.coerceAtLeast(0)
         val safeGold = gold.coerceAtLeast(0)
         val safeIncome = cityIncome.coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val safeCityUpkeep = cityUpkeep.coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val available = (safeGold.toLong() + safeIncome.toLong()).coerceAtMost(Int.MAX_VALUE.toLong())
+        val remainingAfterCityUpkeep = (available - safeCityUpkeep.toLong()).coerceAtLeast(0L)
+        val unpaidCityUpkeep = (safeCityUpkeep.toLong() - available).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         val upkeep = annualUpkeep(safeArmy)
-        if (available >= upkeep.toLong()) {
-            val remainingGold = (available - upkeep.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-            return ArmyAnnualSettlement(safeArmy, remainingGold, safeIncome, upkeep, 0,
-                "Year advanced: +" + safeIncome + " city income, -" + upkeep + " army upkeep. Army maintained.")
+        if (remainingAfterCityUpkeep >= upkeep.toLong()) {
+            val remainingGold = (remainingAfterCityUpkeep - upkeep.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            return ArmyAnnualSettlement(
+                safeArmy, remainingGold, safeIncome, upkeep, 0,
+                "Year advanced: +$safeIncome city income, -$safeCityUpkeep city upkeep, -$upkeep army upkeep. Army maintained.",
+                safeCityUpkeep, unpaidCityUpkeep
+            )
         }
-        val desertions = (upkeep.toLong() - available).coerceAtMost(safeArmy.toLong()).toInt()
+        val desertions = (upkeep.toLong() - remainingAfterCityUpkeep).coerceAtMost(safeArmy.toLong()).toInt()
         val survivors = safeArmy - desertions
-        return ArmyAnnualSettlement(survivors, 0, safeIncome, upkeep, desertions,
-            "Year advanced: +" + safeIncome + " city income, " + upkeep + " upkeep due. " + desertions + " soldiers deserted because upkeep was unpaid.")
+        return ArmyAnnualSettlement(
+            survivors, 0, safeIncome, upkeep, desertions,
+            "Year advanced: +$safeIncome city income, -$safeCityUpkeep city upkeep, $upkeep army upkeep due. $desertions soldiers deserted because army upkeep was unpaid.",
+            safeCityUpkeep, unpaidCityUpkeep
+        )
     }
 }

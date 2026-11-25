@@ -11,7 +11,8 @@ data class GameYearResult(
     val gold: Int,
     val cityIncome: Int,
     val armyUpkeep: Int,
-    val message: String
+    val message: String,
+    val cityUpkeep: Int = 0
 )
 
 object GameTurnSystem {
@@ -44,10 +45,11 @@ object GameTurnSystem {
         }
         val world = WorldTurnSystem.enemyTurn(enemyKingdomState, grown, nextYear, playerKingdom)
         val income = WorldTurnSystem.kingdomIncome(world.cities, taxRatePercent)
-        val settlement = ArmySystem.settleYear(army, gold, income.toLong())
+        val cityUpkeep = WorldTurnSystem.kingdomCityUpkeep(world.cities)
+        val settlement = ArmySystem.settleYear(army, gold, income.toLong(), cityUpkeep.toLong())
         val reports = (battleReports + world.reports).takeLast(30)
         val message = buildString {
-            append("Year $nextYear: kingdom income +$income gold; army upkeep ${settlement.upkeep} gold. ")
+            append("Year $nextYear: kingdom income +$income gold; city upkeep -$cityUpkeep gold; army upkeep ${settlement.upkeep} gold. ")
             if (world.reports.isEmpty()) append("No enemy attacks this year.")
             else append("${world.reports.size} enemy attack${if (world.reports.size == 1) "" else "s"} resolved.")
             if (settlement.desertions > 0) append(" ${settlement.desertions} soldiers deserted.")
@@ -62,7 +64,8 @@ object GameTurnSystem {
             gold = settlement.gold,
             cityIncome = income,
             armyUpkeep = settlement.upkeep,
-            message = message
+            message = message,
+            cityUpkeep = cityUpkeep
         )
     }
 }

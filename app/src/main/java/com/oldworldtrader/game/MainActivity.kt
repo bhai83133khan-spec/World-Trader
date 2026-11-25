@@ -532,7 +532,8 @@ private fun OldWorldTraderApp() {
                             cities = enemyTurn.cities
                             battleReports = (battleReports + enemyTurn.reports).takeLast(30)
                             val income = WorldTurnSystem.kingdomIncome(enemyTurn.cities)
-                            val annualSettlement = ArmySystem.settleYear(army, gold, income.toLong())
+                            val cityUpkeep = WorldTurnSystem.kingdomCityUpkeep(enemyTurn.cities)
+                            val annualSettlement = ArmySystem.settleYear(army, gold, income.toLong(), cityUpkeep.toLong())
                             gold = annualSettlement.gold
                             army = annualSettlement.army
                             val enemySummary = enemyTurn.reports.joinToString(" ") { it.summary }

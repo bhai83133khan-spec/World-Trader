@@ -19,6 +19,19 @@ object CityDashboardRules {
         return WorldTurnSystem.ownedCityIncome(projectedCity, taxRatePercent)
     }
 
+    fun nextYearCityUpkeep(city: CityData): Int {
+        if (!city.owned) return 0
+        val projectedPopulation = (city.population.toLong() + annualGrowth(city).toLong())
+            .coerceAtMost(CityGrowthSystem.populationCapacity(city).toLong())
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val projectedCity = WorldTurnSystem.migrateOwnership(listOf(city.copy(population = projectedPopulation))).single()
+        return WorldTurnSystem.cityServiceUpkeep(projectedCity)
+    }
+
+    fun nextYearNetIncome(city: CityData, taxRatePercent: Int = 10): Int =
+        (nextYearIncome(city, taxRatePercent).toLong() - nextYearCityUpkeep(city).toLong())
+            .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
+
     fun welfareLabel(city: CityData): String {
         val hasHospital = (city.buildings["Hospital"] ?: 0) > 0
         val hasPark = (city.buildings["Park"] ?: 0) > 0
