@@ -2,14 +2,21 @@ package com.oldworldtrader.game
 
 /** Values shown on the owned-city dashboard, derived from the rules the game currently applies. */
 object CityDashboardRules {
-    fun annualGrowth(city: CityData): Int = CityGrowthSystem.annualGrowth(city)
+    fun annualGrowth(city: CityData): Int =
+        if (city.owned && (city.controlledBy == null || city.controlledBy == WorldTurnSystem.PLAYER_FACTION)) {
+            CityGrowthSystem.annualGrowth(city)
+        } else {
+            0
+        }
 
-    /** The year-advance action collects income after applying that year's population growth. */
-    fun nextYearIncome(city: CityData): Int {
+    /** Preview the same post-growth city income used by the annual kingdom settlement, including buildings. */
+    fun nextYearIncome(city: CityData, taxRatePercent: Int = 10): Int {
         if (!city.owned) return 0
         val populationAfterGrowth = (city.population.toLong() + annualGrowth(city).toLong())
-            .coerceAtMost(Int.MAX_VALUE.toLong())
-        return (populationAfterGrowth / 20L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            .coerceAtMost(CityGrowthSystem.populationCapacity(city).toLong())
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val projectedCity = WorldTurnSystem.migrateOwnership(listOf(city.copy(population = populationAfterGrowth))).single()
+        return WorldTurnSystem.ownedCityIncome(projectedCity, taxRatePercent)
     }
 
     fun welfareLabel(city: CityData): String {

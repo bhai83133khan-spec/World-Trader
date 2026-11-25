@@ -62,6 +62,29 @@ class CityDashboardRulesTest {
     }
 
     @Test
+    fun dashboardIncomePreviewIncludesMarketHarborAndWorkshopBonusesAfterGrowth() {
+        val city = CityData(
+            "alex", "Alexandria", "Egypt", 300, 6000, 20, owned = true,
+            buildings = mutableMapOf("Market" to 2, "Harbor" to 1, "Workshop" to 1)
+        )
+
+        // 300 + 10 annual growth = 310 people => 15 base gold, plus 100 building income.
+        assertEquals(115, CityDashboardRules.nextYearIncome(city))
+    }
+
+    @Test
+    fun dashboardIncomePreviewRejectsRivalControlledOwnedCity() {
+        val city = CityData(
+            "alex", "Alexandria", "Egypt", 300, 6000, 20, owned = true,
+            controlledBy = "Rival",
+            buildings = mutableMapOf("Market" to 2)
+        )
+
+        assertEquals(0, CityDashboardRules.annualGrowth(city))
+        assertEquals(0, CityDashboardRules.nextYearIncome(city))
+    }
+
+    @Test
     fun dashboardGrowthPreviewRespectsHousingCapacityAndUpgrade() {
         val nearCapacity = CityData("near", "Near Capacity", "Egypt", 510, 0, 0, owned = true)
         assertEquals(0, CityDashboardRules.annualGrowth(nearCapacity))

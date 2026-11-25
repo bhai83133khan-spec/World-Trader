@@ -464,13 +464,15 @@ private fun OldWorldTraderApp() {
                         } else {
                             year += 1
                             marketState = marketState.restockYearly()
-                            cities = cities.map {
-                                if (it.owned) it.copy(
-                                    population = (it.population.toLong() + CityGrowthSystem.annualGrowth(it).toLong())
+                            val grownCities = WorldTurnSystem.migrateOwnership(cities.map { city ->
+                                if (city.owned && (city.controlledBy == null || city.controlledBy == WorldTurnSystem.PLAYER_FACTION)) city.copy(
+                                    population = (city.population.toLong() + CityDashboardRules.annualGrowth(city).toLong())
+                                        .coerceAtMost(CityGrowthSystem.populationCapacity(city).toLong())
                                         .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                                ) else it
-                            }
-                            val income = cities.filter { it.owned }.sumOf { it.population.toLong() / 20L }
+                                ) else city
+                            })
+                            cities = grownCities
+                            val income = WorldTurnSystem.kingdomIncome(grownCities)
                             val annualSettlement = ArmySystem.settleYear(army, gold, income)
                             gold = annualSettlement.gold
                             army = annualSettlement.army
