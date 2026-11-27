@@ -80,7 +80,7 @@ class MerchantContractSystemTest {
     @Test
     fun completionHistoryKeepsMostRecentMarkers() {
         val previous = (0 until MerchantContractState.MAX_SAVED_COMPLETIONS).map { "old-${it}" }
-        val state = MerchantContractState(year = 1, completedContractIds = previous)
+        val state = MerchantContractState(year = 1, completedContractIds = previous.toSet())
         val contract = MerchantContractSystem.board("alex", 1, state).first()
         val cargo = mapOf(contract.goodName to contract.quantity)
         val result = MerchantContractSystem.complete(contract, "alex", 1, 500, cargo, state)
@@ -90,7 +90,7 @@ class MerchantContractSystemTest {
         assertFalse("old-0" in result.state.completedContractIds)
 
         val overLimit = (0 until 150).map { "contract-${it}" }
-        val normalized = MerchantContractState(year = 1, completedContractIds = overLimit).forYear(1)
+        val normalized = MerchantContractState(year = 1, completedContractIds = overLimit.toSet()).forYear(1)
         assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, normalized.completedContractIds.size)
         assertEquals((50 until 150).map { "contract-${it}" }, normalized.completedContractIds)
     }
@@ -111,7 +111,7 @@ class MerchantContractSystemTest {
 
     @Test
     fun completionMarkerStorageKeepsRecentSequenceBounded() {
-        val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-${it}" }).forYear(3)
+        val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-${it}" }.toSet()).forYear(3)
         assertEquals(100, state.completedContractIds.size)
         assertEquals((51..150).map { "contract-${it}" }, state.completedContractIds)
     }
