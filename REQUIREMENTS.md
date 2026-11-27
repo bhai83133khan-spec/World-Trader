@@ -27,14 +27,14 @@
 - [x] Shop ownership and inventory management
 
 ### Travel and maritime systems
-- [ ] City travel and country travel as separate navigation systems
-- [ ] Ships, purchase, cargo capacity, upgrade progression
-- [ ] Port routes and travel costs/duration
-- [ ] Fleet ownership and ship selection
+- [x] City travel and country travel as separate navigation systems
+- [x] Ships, purchase, cargo capacity, upgrade progression
+- [x] Port routes and travel costs/duration
+- [x] Fleet ownership and ship selection
 
 ### Army and kingdoms
-- [ ] Recruit and maintain army with costs
-- [ ] City garrison station/withdraw, defense, capture losses, persistence, and annual upkeep
+- [x] Recruit and maintain army with costs
+- [x] City garrison station/withdraw, defense, capture losses, persistence, and annual upkeep
 - [x] City defense and conquest calculations (deterministic rules, capture validation and damage)
 - [x] City Dashboard displays city defense strength including defensive building bonuses
 - [x] Kingdom overview aggregates field army and owned-city defense strength
@@ -42,8 +42,8 @@
 - [ ] Intelligence reports and spy/information mechanics
 
 ### Progression
-- [ ] Research/technology tree
-- [ ] Unlock gates tied to population, buildings, wealth, or tech
+- [x] Research/technology tree
+- [x] Unlock gates tied to population, buildings, wealth, or tech
 - [ ] Health, education, safety, morale, and city development modifiers
 - [x] Offline save/load game state and recovery after app restart (gold, year, army, country, cities, building levels/unlocks, market stocks and cargo; stored in app-private preferences)
 
@@ -59,16 +59,18 @@
 Implemented in repository:
 - Basic Compose prototype: city list/founding, building upgrades, annual advancement, recruitment and conquest
 - Starter economy and progression data models
-- City garrison transfers, capacity, defense contribution, capture cleanup, save migration, and yearly upkeep are integrated (CI pending)
+- City garrison transfers, capacity, defense contribution, capture cleanup, save migration, and yearly upkeep are integrated and CI-verified (run #199)
 - City-specific market transaction engine for market quotes, price trends, stock and cargo validation
 - **Market tab integration:** select a trading port; show city/year/stock-aware prices and trend; track port stock independently and shared cargo; buy/sell through the transaction engine with quantity, affordability, inventory and overflow checks
 - **Seasonal market events:** repeatable commodity/city/year supply-surplus, shortage, high-demand, high-supply, or balanced factors are integrated into the port UI; trends compare current and prior-year event factors
 - **City shops:** owned-city gated shop purchase (1,000 gold), cargo-to-shop stocking, customer sales at 25% retail markup, cash collection, offline save/load for shop stock and revenue; transaction tests and APK build verified in CI run #95
 - **Trend-risk warnings:** absolute price trend of 8%+ is Moderate and 20%+ is High; the classifier uses Long arithmetic to safely handle extreme input values
 - **City resources:** local food/timber/iron stocks, annual production from Farm/Sawmill/Iron Mine upgrades, 10,000-unit caps, per-city save/load migration, city dashboard display, and kingdom stock aggregation; unit tests and CI verified
+- **Ships and sea trading:** ship purchases, ownership/selection, cargo-hull upgrades, route costs/duration, voyage progression, city/country travel, and offline save/load; unit tests and CI verified
+- **Research and technology:** four technologies with prerequisite/population gates, effects on sales/cargo/recruitment/building upgrades, Compose UI, and save/load; unit tests and CI verified
 - JUnit test added for city-stock isolation and separate port quotes
 - GitHub Actions runs unit tests before the debug APK build
 
-**Not yet implemented:** resource consumption/trade, additional city services and upkeep, manual supply/demand controls, separate country trade, ship/fleet and route systems, kingdom/intelligence/research, tutorial, and on-device QA.
+**Not yet implemented:** resource consumption/trade, additional city services and upkeep, manual supply/demand controls, separate country-level trade, advanced kingdom/intelligence, tutorial, and on-device QA.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.
