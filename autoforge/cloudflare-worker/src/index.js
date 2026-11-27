@@ -22,7 +22,7 @@ async function askAI(prompt, env) {
       "HTTP-Referer":"https://autoforge-worker.local",
       "X-Title":"AutoForge"
     },
-    body:JSON.stringify({model:env.OPENROUTER_MODEL || "openrouter/auto", messages:[
+    body:JSON.stringify({model:env.OPENROUTER_MODEL || "openrouter/free", messages:[
       {role:"system",content:SYSTEM_PROMPT},{role:"user",content:prompt}
     ], temperature:0.3})
   });
@@ -37,7 +37,7 @@ export default {
   let update; try { update=await request.json(); } catch { return new Response("Bad JSON",{status:400});}
   const msg=update.message; if(!msg?.text) return new Response("OK");
   const chatId=String(msg.chat?.id || ""); if(chatId!==OWNER_CHAT_ID) { await send(chatId,"Access denied.",env); return new Response("OK");}
-  const text=msg.text.trim(); const cmd=text.split(/\\s+/)[0].toLowerCase();
+  const text=msg.text.trim(); const cmd=text.split(/\s+/)[0].toLowerCase();
   if(cmd==="/start"||cmd==="/help"){
     await send(chatId,"AutoForge is connected to its AI webhook.\n\nCommands:\n/status – backend status\n/task <project idea> – AI project planning, research direction, architecture, starter code\n/research <topic> – research brief\n/report – capability/status report\n/pause – stop current chat response (no background jobs currently)\n\nNote: autonomous GitHub commits/build/APK delivery are not enabled until GitHub write integration and runner are configured.",env);
   } else if(cmd==="/status") {
@@ -45,8 +45,8 @@ export default {
   } else if(cmd==="/report") {
     await send(chatId,"AutoForge status report:\n✓ Telegram webhook handler\n✓ Owner-only access\n✓ OpenRouter chat integration\n✓ /task and /research handlers\n✗ Persistent task queue\n✗ Repository commit/push automation\n✗ Android build orchestration/APK delivery\n\nThese remaining features require GitHub integration and a runner.",env);
   } else if(cmd==="/task"||cmd==="/research") {
-    const prompt=text.replace(/^\\/(task|research)\\s*/i,"").trim();
-    if(!prompt){await send(chatId,cmd===" /task"?"Send: /task <idea>":"Send a topic after /research",env); return new Response("OK");}
+    const prompt=text.replace(/^\/(task|research)\s*/i,"").trim();
+    if(!prompt){await send(chatId,cmd==="/task"?"Send: /task <idea>":"Send a topic after /research",env); return new Response("OK");}
     await send(chatId,"Received. Asking AI to process your request…",env);
     try { const answer=await askAI((cmd==="/research"?"Research brief for: ":"Project task: ")+prompt,env); await send(chatId,answer,env);}
     catch(e){await send(chatId,"AI request failed: "+String(e.message||e).slice(0,900),env);}
