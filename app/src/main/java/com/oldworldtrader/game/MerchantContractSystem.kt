@@ -17,8 +17,10 @@ data class MerchantContractState(
             savedIds.filter(String::isNotBlank).takeLast(MAX_SAVED_COMPLETIONS).toSet()
 
         private fun boundedIds(ids: Set<String>): Set<String> {
-            val sorted = ids.asSequence().filter(String::isNotBlank).sorted().toList()
-            return sorted.drop((sorted.size - MAX_SAVED_COMPLETIONS).coerceAtLeast(0)).toSet()
+            // Completion markers are stored in insertion order (save/load preserves array order).
+            // Keep the newest entries rather than sorting IDs, which can evict a just-completed contract.
+            return ids.asSequence().filter(String::isNotBlank).toList()
+                .takeLast(MAX_SAVED_COMPLETIONS).toSet()
         }
     }
 }
@@ -99,9 +101,10 @@ object MerchantContractSystem {
         val updatedCargo = cargo.toMutableMap()
         val remaining = carried - contract.quantity
         if (remaining == 0) updatedCargo.remove(contract.goodName) else updatedCargo[contract.goodName] = remaining
-        val allCompleted = (safeState.completedContractIds + contract.id).asSequence()
-            .filter(String::isNotBlank).sorted().toList()
-        val boundedCompleted = allCompleted.drop((allCompleted.size - MerchantContractState.MAX_SAVED_COMPLETIONS).coerceAtLeast(0)).toSet()
+        val allCompleted = safeState.completedContractIds.asSequence()
+            .filter(String::isNotBlank).toList() + contract.id
+        // The contract just delivered is always the newest marker; trim only older entries.
+        val boundedCompleted = allCompleted.takeLast(MerchantContractState.MAX_SAVED_COMPLETIONS).toSet()
         val updatedState = safeState.copy(completedContractIds = boundedCompleted)
         return ContractResult(
             success = true,

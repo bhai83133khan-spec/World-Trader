@@ -92,7 +92,7 @@ class MerchantContractSystemTest {
         val overLimit = (0 until 150).map { "contract-${it}" }
         val normalized = MerchantContractState(year = 1, completedContractIds = overLimit.toSet()).forYear(1)
         assertEquals(MerchantContractState.MAX_SAVED_COMPLETIONS, normalized.completedContractIds.size)
-        assertEquals((50 until 150).map { "contract-${it}" }, normalized.completedContractIds)
+        assertEquals((50 until 150).map { "contract-${it}" }.toSet(), normalized.completedContractIds)
     }
 
     @Test
@@ -113,7 +113,7 @@ class MerchantContractSystemTest {
     fun completionMarkerStorageKeepsRecentSequenceBounded() {
         val state = MerchantContractState(year = 3, completedContractIds = (0..150).map { "contract-${it}" }.toSet()).forYear(3)
         assertEquals(100, state.completedContractIds.size)
-        assertEquals((51..150).map { "contract-${it}" }, state.completedContractIds)
+        assertEquals((51..150).map { "contract-${it}" }.toSet(), state.completedContractIds)
     }
 
     @Test
