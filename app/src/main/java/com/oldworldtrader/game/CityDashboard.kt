@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CityDashboard(
     city: CityData,
+    resources: CityResourceInventory = CityResourceInventory(),
     gold: Int,
     onUpgrade: (BuildingSpec) -> Unit,
     upgradeDiscountPercent: Int = 0,
@@ -69,6 +70,15 @@ fun CityDashboard(
             Text(if (city.owned) "Building/service upkeep: -$nextYearCityUpkeep gold" else "Building/service upkeep: 0 gold while unowned")
             Text(if (city.owned) "Net city contribution: $netCityIncome gold" else "Net city contribution: 0 gold")
             Text("Army upkeep (1 gold per soldier/year) is charged at Advance Year.")
+        }
+    }
+
+    val annualResources = CityResourceSystem.annualProduction(city)
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("LOCAL RESOURCE STOCK", fontWeight = FontWeight.Bold)
+            Text("Food: ${resources.food} • Timber: ${resources.wood} • Iron: ${resources.iron}")
+            Text("Annual production: +${annualResources.food} food • +${annualResources.wood} timber • +${annualResources.iron} iron")
         }
     }
 
@@ -153,6 +163,9 @@ fun CityDashboard(
 
 private fun buildingEffect(spec: BuildingSpec): String = when (spec.name) {
     "House" -> "+${spec.populationBoost} people and +1 housing level"
+    "Farm" -> "+${CityResourceSystem.FARM_FOOD_PER_LEVEL} food/year per level"
+    "Sawmill" -> "+${CityResourceSystem.SAWMILL_WOOD_PER_LEVEL} timber/year per level"
+    "Iron Mine" -> "+${CityResourceSystem.IRON_MINE_IRON_PER_LEVEL} iron/year per level"
     "Power Plant" -> "Unlocks electricity"
     else -> if (spec.populationBoost > 0) "+${spec.populationBoost} people" else spec.description
 }

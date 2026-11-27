@@ -11,7 +11,10 @@ object EconomyLogic {
         BuildingSpec("Army Barracks",900,700,0,"Recruit and train troops"),
         BuildingSpec("Temple",500,300,30,"Happiness and morale"),
         BuildingSpec("Park",350,200,15,"City appeal"),
-        BuildingSpec("Power Plant",1800,1500,0,"Unlock electricity and powered buildings")
+        BuildingSpec("Power Plant",1800,1500,0,"Unlock electricity and powered buildings"),
+        BuildingSpec("Farm",400,0,0,"Produces 80 food per year per level"),
+        BuildingSpec("Sawmill",600,0,0,"Produces 40 timber per year per level"),
+        BuildingSpec("Iron Mine",900,0,0,"Produces 25 iron per year per level")
     )
 
     private val intMax = BigInteger.valueOf(Int.MAX_VALUE.toLong())

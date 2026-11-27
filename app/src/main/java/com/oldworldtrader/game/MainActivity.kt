@@ -45,6 +45,7 @@ private fun OldWorldTraderApp() {
     var cityGarrisons by remember { mutableStateOf(savedGame?.cityGarrisons ?: emptyMap()) }
     var researchState by remember { mutableStateOf(savedGame?.researchState ?: ResearchState()) }
     var merchantContractState by remember { mutableStateOf(savedGame?.merchantContractState ?: MerchantContractState()) }
+    var cityResourceInventories by remember { mutableStateOf(savedGame?.cityResourceInventories ?: emptyMap()) }
     var message by remember { mutableStateOf("Build your city, grow population, unlock new technologies.") }
     var cityName by remember { mutableStateOf("") }
     var cities by remember { mutableStateOf(savedGame?.cities ?: listOf(
@@ -57,7 +58,7 @@ private fun OldWorldTraderApp() {
     var travelCountry by remember { mutableStateOf(cities.firstOrNull()?.country ?: selectedCountry) }
     var enemyKingdomState by remember { mutableStateOf(savedGame?.enemyKingdomState ?: EnemyKingdomState()) }
     var battleReports by remember { mutableStateOf(savedGame?.battleReports ?: emptyList()) }
-    LaunchedEffect(gold, year, army, cityGarrisons, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports, merchantContractState) {
+    LaunchedEffect(gold, year, army, cityGarrisons, selectedCountry, cities, marketState, shopState, fleetState, researchState, marketCityId, enemyKingdomState, battleReports, merchantContractState, cityResourceInventories) {
         GameSaveStore.save(
             context,
             SavedGameState(
@@ -74,7 +75,8 @@ private fun OldWorldTraderApp() {
                 enemyKingdomState = enemyKingdomState,
                 battleReports = battleReports,
                 cityGarrisons = cityGarrisons,
-                merchantContractState = merchantContractState
+                merchantContractState = merchantContractState,
+                cityResourceInventories = cityResourceInventories
             )
         )
     }
@@ -85,6 +87,7 @@ private fun OldWorldTraderApp() {
     val kingdomSnapshot = KingdomProgression.evaluate(cities)
     val militarySummary = ArmySystem.kingdomMilitarySummary(army, cities, cityGarrisons)
     val economySummary = KingdomEconomySummarySystem.evaluate(cities, army, cityGarrisons)
+    val resourceSummary = CityResourceSystem.kingdomTotals(cities, cityResourceInventories)
     val cityFoundingCost = KingdomProgression.foundingCost(cities)
     val tabs = listOf("My City", "City Travel", "Country", "Market", "Shop", "Army", "Fleet", "Kingdom", "Research", "War Reports", "Contracts")
 
@@ -138,6 +141,7 @@ private fun OldWorldTraderApp() {
                         } else {
                             CityDashboard(
                                 city = current,
+                                resources = cityResourceInventories[current.id] ?: CityResourceInventory(),
                                 gold = gold,
                                 upgradeDiscountPercent = ResearchSystem.buildingUpgradeDiscountPercent(researchState),
                                 garrison = cityGarrisons[current.id] ?: 0,
@@ -470,6 +474,13 @@ private fun OldWorldTraderApp() {
                             }
                         }
                     }
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("KINGDOM RESOURCE STOCK", fontWeight = FontWeight.Bold)
+                            Text("Food: ${resourceSummary.food} • Timber: ${resourceSummary.wood} • Iron: ${resourceSummary.iron}")
+                            Text("Resources are stored per city; production is applied when advancing a year.")
+                        }
+                    }
                     }
                     8 -> ResearchDashboard(state = researchState, gold = gold,
                         ownedPopulation = kingdomSnapshot.metrics.ownedPopulation,
@@ -519,6 +530,7 @@ private fun OldWorldTraderApp() {
                         val enemyTurn = WorldTurnSystem.enemyTurn(enemyKingdomState, grownCities, year, selectedCountry, cityGarrisons)
                         enemyKingdomState = enemyTurn.state
                         cities = enemyTurn.cities
+                        cityResourceInventories = CityResourceSystem.advanceYear(enemyTurn.cities, cityResourceInventories)
                         cityGarrisons = enemyTurn.cityGarrisons
                         battleReports = (battleReports + enemyTurn.reports).takeLast(30)
                         val income = WorldTurnSystem.kingdomIncome(enemyTurn.cities)

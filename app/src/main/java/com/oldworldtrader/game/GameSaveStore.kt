@@ -18,7 +18,8 @@ data class SavedGameState(
     val enemyKingdomState: EnemyKingdomState = EnemyKingdomState(),
     val battleReports: List<BattleReport> = emptyList(),
     val cityGarrisons: Map<String, Int> = emptyMap(),
-    val merchantContractState: MerchantContractState = MerchantContractState()
+    val merchantContractState: MerchantContractState = MerchantContractState(),
+    val cityResourceInventories: Map<String, CityResourceInventory> = emptyMap()
 )
 
 /** Lightweight, offline save snapshot stored in app-private preferences. */
@@ -55,6 +56,16 @@ object GameSaveStore {
             val savedGarrisons = mutableMapOf<String, Int>()
             garrisonJson.keys().forEach { cityId -> savedGarrisons[cityId] = garrisonJson.optInt(cityId, 0).coerceAtLeast(0) }
             val cityGarrisons = CityGarrisonSystem.sanitize(savedGarrisons, cities)
+            val cityResourcesJson = root.optJSONObject("cityResources") ?: JSONObject()
+            val cityResourceInventories = mutableMapOf<String, CityResourceInventory>()
+            cityResourcesJson.keys().forEach { cityId ->
+                val resourceJson = cityResourcesJson.optJSONObject(cityId) ?: return@forEach
+                cityResourceInventories[cityId] = CityResourceSystem.sanitize(CityResourceInventory(
+                    food = resourceJson.optInt("food", 0),
+                    wood = resourceJson.optInt("wood", 0),
+                    iron = resourceJson.optInt("iron", 0)
+                ))
+            }
 
             val stockJson = root.optJSONObject("cityStocks") ?: JSONObject()
             val stocks = mutableMapOf<String, Map<String, Int>>()
@@ -143,7 +154,8 @@ object GameSaveStore {
                 marketCityId = marketCityId,
                 enemyKingdomState = EnemyKingdomState(enemyKingdoms, enemiesJson.optInt("lastProcessedYear", 0).coerceAtLeast(0)),
                 battleReports = savedReports, cityGarrisons = cityGarrisons,
-                merchantContractState = contractState
+                merchantContractState = contractState,
+                cityResourceInventories = CityResourceSystem.sanitizeAll(cityResourceInventories)
             )
         } catch (_: Exception) {
             null
@@ -177,6 +189,12 @@ object GameSaveStore {
         val garrisonJson = JSONObject()
         CityGarrisonSystem.sanitize(state.cityGarrisons, state.cities).forEach { (cityId, count) -> garrisonJson.put(cityId, count) }
         root.put("cityGarrisons", garrisonJson)
+        val cityResourcesJson = JSONObject()
+        CityResourceSystem.sanitizeAll(state.cityResourceInventories).forEach { (cityId, inventory) ->
+            cityResourcesJson.put(cityId, JSONObject().put("food", inventory.food)
+                .put("wood", inventory.wood).put("iron", inventory.iron))
+        }
+        root.put("cityResources", cityResourcesJson)
 
         val stockJson = JSONObject()
         state.marketState.cityStocks.forEach { (cityId, goods) ->
