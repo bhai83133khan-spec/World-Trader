@@ -7,7 +7,7 @@ Progress is calculated from fixed, weighted milestones (100 total points). Work-
 | Milestone | Weight | Status | Evidence / remaining |
 |---|---:|---|---|
 | Basic city loop: founding, upgrades, yearly advance, starter recruitment/conquest | 15 | Complete | README implementation snapshot |
-| Full city dashboards and services (housing/population, hospital, police, welfare, electricity, prosperity) | 10 | Not complete | REQUIREMENTS.md items remain unchecked |
+| Full city dashboards and services (housing/population, hospital, police, welfare, electricity, prosperity) | 10 | Not complete | Local resource stock/production is implemented; services, resource consumption/trade, and broader dashboard effects remain incomplete |
 | Market engine: city-specific prices, stock/cargo, buy/sell validation | 15 | Complete | REQUIREMENTS.md + README implementation snapshot |
 | Seasonal supply/demand price events | 5 | Complete | REQUIREMENTS.md + README |
 | Trend-risk classification and boundary/extreme tests | 5 | Complete | 8%/20% thresholds; latest documentation commit |
@@ -21,3 +21,8 @@ Progress is calculated from fixed, weighted milestones (100 total points). Work-
 **Verified milestone total: 45 / 100 = 45%.**
 
 The earlier 28% was an unweighted estimate and is not comparable. No feature is claimed to have been added by this baseline commit. CI/device status must be reported separately; an empty status response is not a green build.
+
+
+## Implementation update — 2026-11-28
+
+Local food, timber, and iron stocks with annual production from Farm/Sawmill/Iron Mine upgrades, bounded stock, save/load migration, and city/kingdom display have been added and CI-verified. This is partial city-management progress; no weighted milestone is newly complete, so the verified fixed baseline remains **45/100**.

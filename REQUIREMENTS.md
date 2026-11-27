@@ -14,6 +14,7 @@
 - [ ] Hospital, Police Station, Barracks, Temple, Park, Power Plant
 - [ ] Power plant unlocks electricity and powered infrastructure
 - [ ] City prosperity and annual/passive income with transparent calculations
+- [ ] City resources: food, timber, and iron stocks; production, consumption, and trade (partial: stock, production, save/load, and kingdom aggregation implemented; consumption/trade remain)
 
 ### Trade and markets
 - [x] City-specific market prices and price trend indicators
@@ -64,9 +65,10 @@ Implemented in repository:
 - **Seasonal market events:** repeatable commodity/city/year supply-surplus, shortage, high-demand, high-supply, or balanced factors are integrated into the port UI; trends compare current and prior-year event factors
 - **City shops:** owned-city gated shop purchase (1,000 gold), cargo-to-shop stocking, customer sales at 25% retail markup, cash collection, offline save/load for shop stock and revenue; transaction tests and APK build verified in CI run #95
 - **Trend-risk warnings:** absolute price trend of 8%+ is Moderate and 20%+ is High; the classifier uses Long arithmetic to safely handle extreme input values
+- **City resources:** local food/timber/iron stocks, annual production from Farm/Sawmill/Iron Mine upgrades, 10,000-unit caps, per-city save/load migration, city dashboard display, and kingdom stock aggregation; unit tests and CI verified
 - JUnit test added for city-stock isolation and separate port quotes
 - GitHub Actions runs unit tests before the debug APK build
 
-**Not yet implemented:** additional city services and upkeep, manual supply/demand controls, separate country trade, ship/fleet and route systems, kingdom/intelligence/research, tutorial, and on-device QA.
+**Not yet implemented:** resource consumption/trade, additional city services and upkeep, manual supply/demand controls, separate country trade, ship/fleet and route systems, kingdom/intelligence/research, tutorial, and on-device QA.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.
