@@ -529,19 +529,30 @@ private fun OldWorldTraderApp() {
                         })
                         val enemyTurn = WorldTurnSystem.enemyTurn(enemyKingdomState, grownCities, year, selectedCountry, cityGarrisons)
                         enemyKingdomState = enemyTurn.state
-                        cities = enemyTurn.cities
-                        cityResourceInventories = CityResourceSystem.advanceYear(enemyTurn.cities, cityResourceInventories)
+                        val producedResources = CityResourceSystem.advanceYear(enemyTurn.cities, cityResourceInventories)
+                        val foodSettlement = CityResourceSystem.settleFoodConsumption(enemyTurn.cities, producedResources)
+                        cityResourceInventories = foodSettlement.inventories
+                        cities = foodSettlement.cities
                         cityGarrisons = enemyTurn.cityGarrisons
                         battleReports = (battleReports + enemyTurn.reports).takeLast(30)
-                        val income = WorldTurnSystem.kingdomIncome(enemyTurn.cities)
-                        val cityUpkeep = WorldTurnSystem.kingdomCityUpkeep(enemyTurn.cities)
+                        val income = WorldTurnSystem.kingdomIncome(cities)
+                        val cityUpkeep = WorldTurnSystem.kingdomCityUpkeep(cities)
                         val garrisonUpkeep = CityGarrisonSystem.total(cityGarrisons)
                         val settlement = ArmySystem.settleYear(army, gold, income.toLong(), cityUpkeep.toLong(), garrisonUpkeep)
                         gold = settlement.gold
                         army = settlement.army
                         cityGarrisons = CityGarrisonSystem.applyDesertions(cityGarrisons, settlement.garrisonDesertions)
                         val enemySummary = enemyTurn.reports.joinToString(" ") { it.summary }
-                        message = if (enemySummary.isBlank()) settlement.message else "${settlement.message} $enemySummary"
+                        val foodWarnings = foodSettlement.foodShortages.entries.joinToString(" ") { (cityId, shortage) ->
+                            val cityName = cities.firstOrNull { it.id == cityId }?.name ?: cityId
+                            val populationLoss = foodSettlement.populationLosses[cityId] ?: 0
+                            "Food shortage in " + cityName + ": " + shortage + " units; population -" + populationLoss + "."
+                        }
+                        message = buildString {
+                            append(settlement.message)
+                            if (enemySummary.isNotBlank()) append(" ").append(enemySummary)
+                            if (foodWarnings.isNotBlank()) append(" ").append(foodWarnings)
+                        }
                     }
                 }, modifier = Modifier.fillMaxWidth()) { Text("Advance Year") }
             }

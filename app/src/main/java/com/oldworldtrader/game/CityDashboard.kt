@@ -74,11 +74,18 @@ fun CityDashboard(
     }
 
     val annualResources = CityResourceSystem.annualProduction(city)
+    val foodPreview = CityResourceSystem.previewAnnualFood(city, resources)
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("LOCAL RESOURCE STOCK", fontWeight = FontWeight.Bold)
-            Text("Food: ${resources.food} • Timber: ${resources.wood} • Iron: ${resources.iron}")
-            Text("Annual production: +${annualResources.food} food • +${annualResources.wood} timber • +${annualResources.iron} iron")
+            Text("Food: " + resources.food + " • Timber: " + resources.wood + " • Iron: " + resources.iron)
+            Text("Annual production: +" + annualResources.food + " food • +" + annualResources.wood + " timber • +" + annualResources.iron + " iron")
+            Text("Annual food demand: " + foodPreview.demand + " • Available after production: " + foodPreview.available)
+            if (foodPreview.shortage > 0) {
+                Text("Projected shortage: " + foodPreview.shortage + " food • population impact: -" + foodPreview.populationLoss, color = MaterialTheme.colorScheme.error)
+            } else {
+                Text("Projected food surplus: " + foodPreview.remainingFood)
+            }
         }
     }
 
