@@ -53,6 +53,7 @@ class CityResourceSystemTest {
         assertEquals(mapOf("home" to CityResourceInventory(food = 0, wood = 10_000, iron = 50)), result)
         assertEquals(emptyMap<String, CityResourceInventory>(), CityResourceSystem.sanitizeAll(emptyMap()))
     }
+
     @Test
     fun annualFoodDemandRoundsUpAndForecastIncludesFarmProduction() {
         val home = city("home", buildings = mutableMapOf("Farm" to 1)).copy(population = 501)
@@ -63,6 +64,16 @@ class CityResourceSystemTest {
         assertEquals(0, preview.shortage)
         assertEquals(49, preview.remainingFood)
         assertEquals(0, preview.populationLoss)
+    }
+
+    @Test
+    fun foodForecastIncludesPopulationGrowthBeforeCalculatingDemand() {
+        val home = city("home").copy(population = 490)
+        val preview = CityResourceSystem.previewAnnualFood(home, CityResourceInventory())
+        assertEquals(500, preview.available)
+        assertEquals(50, preview.demand)
+        assertEquals(50, preview.consumed)
+        assertEquals(0, preview.shortage)
     }
 
     @Test

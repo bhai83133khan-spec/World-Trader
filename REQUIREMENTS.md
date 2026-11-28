@@ -71,6 +71,6 @@ Implemented in repository:
 - JUnit test added for city-stock isolation and separate port quotes
 - GitHub Actions runs unit tests before the debug APK build
 
-**Not yet implemented:** resource consumption/trade, additional city services and upkeep, manual supply/demand controls, separate country-level trade, advanced kingdom/intelligence, tutorial, and on-device QA.
+**Not yet implemented:** resource trading, additional city services and upkeep, manual supply/demand controls, separate country-level trade, advanced kingdom/intelligence, tutorial, and on-device QA.
 
 **Important:** Helper logic is not the same as fully wired gameplay. Items above remain unchecked until implemented in the UI/game state, built, and tested. Do not label the game complete or release-ready until this checklist and on-device QA are complete.

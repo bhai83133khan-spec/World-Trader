@@ -80,19 +80,23 @@ object CityResourceSystem {
     }
 
     /** One food unit feeds ten citizens for one simulated year. */
-    fun annualFoodDemand(city: CityData): Int {
-        if (!CityGarrisonSystem.isPlayerControlled(city)) return 0
-        val population = city.population.coerceAtLeast(0).toLong()
-        val demand = ((population + 9L) / 10L) * FOOD_PER_TEN_PEOPLE_PER_YEAR.toLong()
+    fun annualFoodDemand(city: CityData): Int =
+        if (CityGarrisonSystem.isPlayerControlled(city)) foodDemand(city.population) else 0
+
+    private fun foodDemand(population: Int): Int {
+        val people = population.coerceAtLeast(0).toLong()
+        val demand = ((people + 9L) / 10L) * FOOD_PER_TEN_PEOPLE_PER_YEAR.toLong()
         return demand.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
-    /** Forecasts next year's food after production is added to current stock, then consumed. */
+    /** Forecasts food after next year's population growth and production, then consumption. */
     fun previewAnnualFood(city: CityData, inventory: CityResourceInventory): FoodConsumptionPreview {
         if (!CityGarrisonSystem.isPlayerControlled(city)) return foodPreview(0, 0, 0)
         val current = sanitize(inventory)
         val available = addStock(current.food, annualProduction(city).food)
-        return foodPreview(city.population, annualFoodDemand(city), available)
+        val projectedPopulation = (city.population.toLong() + CityGrowthSystem.annualGrowth(city).toLong())
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        return foodPreview(projectedPopulation, foodDemand(projectedPopulation), available)
     }
 
     /** Consumes food from already-produced yearly stocks; shortages cause up to 10% population loss. */

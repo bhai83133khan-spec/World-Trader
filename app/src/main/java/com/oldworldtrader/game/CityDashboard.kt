@@ -80,7 +80,7 @@ fun CityDashboard(
             Text("LOCAL RESOURCE STOCK", fontWeight = FontWeight.Bold)
             Text("Food: " + resources.food + " • Timber: " + resources.wood + " • Iron: " + resources.iron)
             Text("Annual production: +" + annualResources.food + " food • +" + annualResources.wood + " timber • +" + annualResources.iron + " iron")
-            Text("Annual food demand: " + foodPreview.demand + " • Available after production: " + foodPreview.available)
+            Text("Next-year food demand: " + foodPreview.demand + " • Available after production: " + foodPreview.available)
             if (foodPreview.shortage > 0) {
                 Text("Projected shortage: " + foodPreview.shortage + " food • population impact: -" + foodPreview.populationLoss, color = MaterialTheme.colorScheme.error)
             } else {

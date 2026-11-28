@@ -7,7 +7,7 @@ Progress is calculated from fixed, weighted milestones (100 total points). Work-
 | Milestone | Weight | Status | Evidence / remaining |
 |---|---:|---|---|
 | Basic city loop: founding, upgrades, yearly advance, starter recruitment/conquest | 15 | Complete | README implementation snapshot |
-| Full city dashboards and services (housing/population, hospital, police, welfare, electricity, prosperity) | 10 | Not complete | Resource stock/production is partial; full service effects and resource consumption/trade remain incomplete |
+| Full city dashboards and services (housing/population, hospital, police, welfare, electricity, prosperity) | 10 | Not complete | Food production/consumption and shortage effects are integrated; broader services and resource trading remain incomplete |
 | Market engine: city-specific prices, stock/cargo, buy/sell validation | 15 | Complete | REQUIREMENTS.md + README implementation snapshot |
 | Seasonal supply/demand price events | 5 | Complete | REQUIREMENTS.md + README |
 | Trend-risk classification and boundary/extreme tests | 5 | Complete | 8%/20% thresholds; latest documentation commit |
@@ -25,4 +25,4 @@ The earlier 28% was an unweighted estimate and is not comparable. No feature is 
 
 ## Implementation update — 2026-11-28
 
-Local food, timber, and iron stocks with annual production from Farm/Sawmill/Iron Mine upgrades, bounded stock, save/load migration, and city/kingdom display are CI-verified partial city-management progress. Annual food consumption (1 unit per 10 people) and a food-shortage population penalty capped at 10% per year are now integrated into the yearly settlement and forecast UI Ships/sea trading and research/technology progression now count as complete after CI run #199 passed unit tests, `assembleDebug`, and APK artifact upload. Garrison station/withdraw, capture cleanup, defense and upkeep are integrated/tested, but the broader kingdom/country/intelligence milestone remains incomplete. The verified fixed baseline is now **65/100**.
+Local food, timber, and iron stocks with annual production from Farm/Sawmill/Iron Mine upgrades, bounded stock, save/load migration, and city/kingdom display are CI-verified partial city-management progress. Annual food consumption (1 unit per 10 people) and a food-shortage population penalty capped at 10% per year are now integrated into the yearly settlement and forecast UI. Ships/sea trading and research/technology progression now count as complete after CI run #199 passed unit tests, `assembleDebug`, and APK artifact upload. Garrison station/withdraw, capture cleanup, defense and upkeep are integrated/tested, but the broader kingdom/country/intelligence milestone remains incomplete. The verified fixed baseline is now **65/100**.
